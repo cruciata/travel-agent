@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>范の旅行小助手</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ===== 极简设计系统 ===== */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #fafafa;
+            --bg-tertiary: #f5f5f5;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --text-tertiary: #9e9e9e;
+            --border: #e0e0e0;
+            --border-light: #f0f0f0;
+            --accent: #212121;
+            --accent-hover: #000000;
+            --danger: #d32f2f;
+            --success: #388e3c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        /* ===== 布局 ===== */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ===== 侧边栏 ===== */
+        .sidebar {
+            width: 320px;
+            background: var(--bg-primary);
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            overflow-y: auto;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+        }
+
+        .sidebar-header {
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-light);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+
+        /* ===== 标签页 ===== */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 12px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+        }
+
+        /* ===== 内容区域 ===== */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== 输入框 ===== */
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        /* ===== 城市卡片网格 ===== */
+        .city-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .city-card {
+            padding: 10px 8px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: var(--bg-primary);
+            transition: all 0.2s;
+            min-width: 60px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .city-card:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .city-card.selected {
+            background: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+        }
+
+        /* ===== 已选城市列表 ===== */
+        .selected-cities {
+            margin-bottom: 20px;
+        }
+
+        .selected-city-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .selected-city-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* ===== 按钮 ===== */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        /* 删除按钮 - 线框样式 */
+        .btn-outline {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+
+        .btn-outline:hover {
+            background: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+        }
+
+        .btn-block {
+            width: 100%;
+            justify-content: center;
+            padding: 12px;
+            margin-top: 16px;
+        }
+
+        /* ===== 景点卡片 - CSS Grid 2列 ===== */
+        .attractions-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .attractions-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .attraction-card {
+            padding: 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 44px;
+        }
+
+        .attraction-card::before {
+            content: "📍";
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        /* ===== 折叠面板 ===== */
+        .accordion {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .accordion-header {
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .accordion-header:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .accordion-icon {
+            font-size: 12px;
+            color: var(--text-secondary);
+            transition: transform 0.2s;
+        }
+
+        .accordion.expanded .accordion-icon {
+            transform: rotate(180deg);
+        }
+
+        .accordion-content {
+            display: none;
+            padding: 12px;
+            background: var(--bg-primary);
+        }
+
+        .accordion.expanded .accordion-content {
+            display: block;
+        }
+
+        /* ===== 主内容区 ===== */
+        .main-content {
+            margin-left: 320px;
+            flex: 1;
+            padding: 32px;
+            max-width: 900px;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* ===== 统计卡片 ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== 功能列表 ===== */
+        .feature-list {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .feature-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .feature-item {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .feature-item:last-child {
+            border-bottom: none;
+        }
+
+        .feature-icon {
+            color: var(--accent);
+            font-weight: 600;
+            min-width: 20px;
+        }
+
+        .feature-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .feature-text strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 280px;
+            }
+            .main-content {
+                margin-left: 280px;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .container {
+                flex-direction: column;
+            }
+            .city-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* ===== 隐藏滚动条但保留功能 ===== */
+        .sidebar::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+        }
+
+        /* ===== 分隔线 ===== */
+        .divider {
+            height: 1px;
+            background: var(--border-light);
+            margin: 20px 0;
+        }
+
+        /* ===== 空状态 ===== */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-tertiary);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">旅行配置</h2>
+            </div>
+
+            <!-- 标签页 -->
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('city')">城市</div>
+                <div class="tab" onclick="switchTab('food')">美食</div>
+                <div class="tab" onclick="switchTab('budget')">预算</div>
+            </div>
+
+            <!-- 城市标签页 -->
+            <div id="tab-city" class="tab-content active">
+                <div class="input-group">
+                    <label class="input-label">搜索城市</label>
+                    <input type="text" placeholder="输入城市名..." id="city-search">
+                </div>
+
+                <div class="section-title">热门城市</div>
+                <div class="city-grid">
+                    <div class="city-card" onclick="toggleCity(this, '北京')">北京</div>
+                    <div class="city-card" onclick="toggleCity(this, '上海')">上海</div>
+                    <div class="city-card" onclick="toggleCity(this, '广州')">广州</div>
+                    <div class="city-card" onclick="toggleCity(this, '深圳')">深圳</div>
+                    <div class="city-card" onclick="toggleCity(this, '杭州')">杭州</div>
+                    <div class="city-card" onclick="toggleCity(this, '成都')">成都</div>
+                    <div class="city-card" onclick="toggleCity(this, '西安')">西安</div>
+                    <div class="city-card" onclick="toggleCity(this, '重庆')">重庆</div>
+                    <div class="city-card" onclick="toggleCity(this, '苏州')">苏州</div>
+                    <div class="city-card" onclick="toggleCity(this, '南京')">南京</div>
+                    <div class="city-card" onclick="toggleCity(this, '武汉')">武汉</div>
+                    <div class="city-card" onclick="toggleCity(this, '天津')">天津</div>
+                </div>
+
+                <!-- 已选城市 -->
+                <div class="selected-cities" id="selected-cities">
+                    <div class="section-title">已选城市</div>
+                    <!-- 动态添加已选城市 -->
+                </div>
+
+                <!-- 城市景点（自动显示） -->
+                <div id="city-attractions">
+                    <!-- 动态添加城市景点 -->
+                </div>
+            </div>
+
+            <!-- 美食标签页 -->
+            <div id="tab-food" class="tab-content">
+                <div class="input-group">
+                    <label class="input-label">根据美食找城市</label>
+                    <input type="text" placeholder="如：火锅、烤鸭、小笼包...">
+                </div>
+
+                <div class="section-title">热门美食推荐</div>
+                
+                <div class="accordion expanded">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>火锅</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        推荐城市：成都、重庆
+                    </div>
+                </div>
+
+                <div class="accordion">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>烤鸭</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        推荐城市：北京
+                    </div>
+                </div>
+
+                <div class="accordion">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>小笼包</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        推荐城市：上海、杭州、南京
+                    </div>
+                </div>
+
+                <div class="accordion">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>热干面</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        推荐城市：武汉
+                    </div>
+                </div>
+
+                <div class="accordion">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>臭豆腐</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        推荐城市：长沙
+                    </div>
+                </div>
+            </div>
+
+            <!-- 预算标签页 -->
+            <div id="tab-budget" class="tab-content">
+                <div class="input-group">
+                    <label class="input-label">总预算 (元)</label>
+                    <input type="number" value="5000" min="1000" step="1000">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">总天数</label>
+                    <input type="number" value="5" min="1" max="15">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label" style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" checked style="width: auto;">
+                        开启美食推荐
+                    </label>
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-block" onclick="startPlanning()">
+                开始规划
+            </button>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1 class="page-title">范の旅行小助手</h1>
+                <p class="page-subtitle">多城市智能规划 · 机票酒店优化 · 美食反向搜索</p>
+            </div>
+
+            <!-- 统计数据 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">300+</div>
+                    <div class="stat-label">覆盖城市</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">5000+</div>
+                    <div class="stat-label">景点数量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">实时</div>
+                    <div class="stat-label">美食数据</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">每周</div>
+                    <div class="stat-label">更新频率</div>
+                </div>
+            </div>
+
+            <!-- 功能介绍 -->
+            <div class="feature-list">
+                <h3 class="feature-title">核心功能</h3>
+                <div class="feature-item">
+                    <span class="feature-icon">•</span>
+                    <span class="feature-text"><strong>多城市规划</strong> — 一次旅行规划多个城市，自动优化路线</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">•</span>
+                    <span class="feature-text"><strong>机票酒店优化</strong> — 根据实时价格规划最经济的方案</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">•</span>
+                    <span class="feature-text"><strong>美食反向搜索</strong> — 输入美食名称，找到最地道的城市</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">•</span>
+                    <span class="feature-text"><strong>300+城市</strong> — 覆盖全国热门旅游城市</span>
+                </div>
+            </div>
+
+            <!-- 使用步骤 -->
+            <div class="feature-list">
+                <h3 class="feature-title">使用步骤</h3>
+                <div class="feature-item">
+                    <span class="feature-icon">1</span>
+                    <span class="feature-text">在左侧选择或搜索城市（可多选）</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">2</span>
+                    <span class="feature-text">设置总预算和旅行天数</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">3</span>
+                    <span class="feature-text">点击"开始规划"获取智能路线</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">4</span>
+                    <span class="feature-text">查看各城市的详细攻略</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 城市景点数据
+        const cityAttractions = {
+            '西安': ['兵马俑', '大雁塔', '华清池', '古城墙', '大唐不夜城', '回民街', '钟鼓楼', '陕西历史博物馆'],
+            '天津': ['天津之眼', '五大道', '古文化街', '意式风情街', '瓷房子', '盘山', '滨海航母主题公园'],
+            '苏州': ['拙政园', '虎丘', '周庄', '同里', '狮子林', '留园', '寒山寺', '金鸡湖'],
+            '北京': ['故宫', '长城', '颐和园', '天安门', '天坛', '圆明园', '恭王府', '鸟巢'],
+            '上海': ['外滩', '东方明珠', '迪士尼', '豫园', '南京路', '陆家嘴', '田子坊', '新天地'],
+            '广州': ['广州塔', '珠江夜游', '陈家祠', '沙面', '白云山', '长隆野生动物世界'],
+            '深圳': ['世界之窗', '欢乐谷', '东部华侨城', '大梅沙', '小梅沙', '华侨城创意园'],
+            '杭州': ['西湖', '灵隐寺', '雷峰塔', '宋城', '千岛湖', '西溪湿地', '河坊街'],
+            '成都': ['宽窄巷子', '锦里', '武侯祠', '大熊猫基地', '杜甫草堂', '都江堰', '青城山'],
+            '重庆': ['洪崖洞', '解放碑', '磁器口', '长江索道', '武隆天生三桥', '大足石刻'],
+            '南京': ['中山陵', '夫子庙', '总统府', '明孝陵', '秦淮河', '玄武湖', '鸡鸣寺'],
+            '武汉': ['黄鹤楼', '东湖', '武汉大学', '户部巷', '湖北省博物馆', '古琴台']
+        };
+
+        let selectedCities = [];
+
+        // 切换标签页
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+
+        // 切换城市选择
+        function toggleCity(element, cityName) {
+            element.classList.toggle('selected');
+            
+            if (element.classList.contains('selected')) {
+                if (!selectedCities.includes(cityName)) {
+                    selectedCities.push(cityName);
+                }
+            } else {
+                selectedCities = selectedCities.filter(c => c !== cityName);
+            }
+            
+            updateSelectedCities();
+            updateCityAttractions();
+        }
+
+        // 更新已选城市列表
+        function updateSelectedCities() {
+            const container = document.getElementById('selected-cities');
+            
+            if (selectedCities.length === 0) {
+                container.innerHTML = '<div class="section-title">已选城市</div>';
+                return;
+            }
+            
+            let html = '<div class="section-title">已选城市</div>';
+            selectedCities.forEach(city => {
+                html += `
+                    <div class="selected-city-item">
+                        <span class="selected-city-name">${city}</span>
+                        <button class="btn btn-outline" onclick="removeCity('${city}')">删除</button>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // 更新城市景点显示
+        function updateCityAttractions() {
+            const container = document.getElementById('city-attractions');
+            
+            if (selectedCities.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            selectedCities.forEach(city => {
+                const attractions = cityAttractions[city] || ['景点1', '景点2', '景点3'];
+                html += `
+                    <div class="attractions-section">
+                        <div class="accordion expanded">
+                            <div class="accordion-header" onclick="toggleAccordion(this)">
+                                <span>${city}的景点</span>
+                                <span class="accordion-icon">▼</span>
+                            </div>
+                            <div class="accordion-content">
+                                <div class="attractions-grid">
+                                    ${attractions.slice(0, 6).map(a => `
+                                        <div class="attraction-card">${a}</div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // 删除城市
+        function removeCity(cityName) {
+            selectedCities = selectedCities.filter(c => c !== cityName);
+            
+            // 更新卡片状态
+            document.querySelectorAll('.city-card').forEach(card => {
+                if (card.textContent === cityName) {
+                    card.classList.remove('selected');
+                }
+            });
+            
+            updateSelectedCities();
+            updateCityAttractions();
+        }
+
+        // 切换折叠面板
+        function toggleAccordion(header) {
+            const accordion = header.parentElement;
+            accordion.classList.toggle('expanded');
+        }
+
+        // 开始规划
+        function startPlanning() {
+            if (selectedCities.length === 0) {
+                alert('请至少选择一个城市！');
+                return;
+            }
+            alert(`开始规划 ${selectedCities.join('、')} 的旅行路线...`);
+        }
+
+        // 搜索城市
+        document.getElementById('city-search')?.addEventListener('input', function(e) {
+            const value = e.target.value.toLowerCase();
+            document.querySelectorAll('.city-card').forEach(card => {
+                const cityName = card.textContent.toLowerCase();
+                card.style.display = cityName.includes(value) ? 'block' : 'none';
+            });
+        });
+    </script>
+</body>
+</html>
