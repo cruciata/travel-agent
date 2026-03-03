@@ -71,6 +71,7 @@ if 'selected_attractions' not in st.session_state:
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
     
     * { font-family: 'Inter', -apple-system, sans-serif !important; }
     
@@ -90,6 +91,12 @@ st.markdown("""
     }
     
     button[kind="header"] { display: none !important; }
+    
+    /* 修复 Streamlit Material Icon 显示问题 */
+    [data-testid="stIconMaterial"] { 
+        font-family: 'Material Icons' !important;
+        font-size: 24px !important;
+    }
     
     h1 { font-size: 24px !important; font-weight: 600 !important; color: #1a1a1a; }
     h2 { font-size: 18px !important; font-weight: 600 !important; color: #1a1a1a; }
