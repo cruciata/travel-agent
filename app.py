@@ -268,9 +268,9 @@ def display_city_attractions_selector(city):
     
     selected = st.session_state.selected_attractions.get(city, [])
     
-    st.markdown(f"**{icon('pin')} {city}的景点**")
+    st.markdown(f"**{icon('pin')} {city}的景点**", unsafe_allow_html=True)
     
-    attr_search = st.text_input(f"{icon('search')} 搜索景点", placeholder="输入景点名...", key=f"attr_search_{city}")
+    attr_search = st.text_input("🔍 搜索景点", placeholder="输入景点名...", key=f"attr_search_{city}")
     
     display_attractions = attractions
     if attr_search:
@@ -294,14 +294,14 @@ def main():
     st.caption("多城市智能规划 · 机票酒店优化 · 美食反向搜索")
     
     with st.sidebar:
-        st.markdown(f"## {icon('pin')} 旅行配置")
+        st.markdown(f"## {icon('pin')} 旅行配置", unsafe_allow_html=True)
         
-        tab1, tab2, tab3 = st.tabs([f"{icon('pin')} 城市", f"{icon('utensils')} 美食", f"{icon('wallet')} 预算"])
+        tab1, tab2, tab3 = st.tabs(["📍 城市", "🍜 美食", "💰 预算"])
         
         with tab1:
             st.markdown("### 选择城市")
             
-            search_keyword = st.text_input(f"{icon('search')} 搜索城市", placeholder="输入城市名...")
+            search_keyword = st.text_input("🔍 搜索城市", placeholder="输入城市名...")
             
             if search_keyword:
                 matched = search_cities(search_keyword)
@@ -312,7 +312,7 @@ def main():
                             st.write(city)
                         with col2:
                             if city in st.session_state.selected_cities:
-                                st.markdown(f"{icon('check')} 已选")
+                                st.markdown(f"{icon('check')} 已选", unsafe_allow_html=True)
                             else:
                                 if st.button(f"➕ 添加", key=f"search_add_{city}"):
                                     toggle_city(city)
@@ -518,16 +518,16 @@ def main():
         st.subheader("欢迎使用范の旅行小助手")
         
         st.markdown("**核心功能**")
-        st.markdown(f"- {icon('pin')} **多城市规划** — 一次旅行规划多个城市，自动优化路线")
-        st.markdown(f"- {icon('plane')} **机票酒店优化** — 根据实时价格规划最经济的方案")
-        st.markdown(f"- {icon('utensils')} **美食反向搜索** — 输入美食名称，找到最地道的城市")
-        st.markdown(f"- {icon('star')} **景点详细攻略** — 游玩时间、门票、交通一站式信息")
+        st.markdown(f"- {icon('pin')} **多城市规划** — 一次旅行规划多个城市，自动优化路线", unsafe_allow_html=True)
+        st.markdown(f"- {icon('plane')} **机票酒店优化** — 根据实时价格规划最经济的方案", unsafe_allow_html=True)
+        st.markdown(f"- {icon('utensils')} **美食反向搜索** — 输入美食名称，找到最地道的城市", unsafe_allow_html=True)
+        st.markdown(f"- {icon('star')} **景点详细攻略** — 游玩时间、门票、交通一站式信息", unsafe_allow_html=True)
         
         st.markdown("**使用步骤**")
-        st.markdown(f"1. {icon('pin')} 在左侧选择城市（可多选）")
-        st.markdown(f"2. {icon('star')} 为每个城市选择想去的景点（支持搜索）")
-        st.markdown(f"3. {icon('wallet')} 设置总预算和旅行天数")
-        st.markdown(f'4. {icon("arrow")} 点击"开始规划"一键生成完整攻略')
+        st.markdown(f"1. {icon('pin')} 在左侧选择城市（可多选）", unsafe_allow_html=True)
+        st.markdown(f"2. {icon('star')} 为每个城市选择想去的景点（支持搜索）", unsafe_allow_html=True)
+        st.markdown(f"3. {icon('wallet')} 设置总预算和旅行天数", unsafe_allow_html=True)
+        st.markdown(f'4. {icon("arrow")} 点击"开始规划"一键生成完整攻略', unsafe_allow_html=True)
         
         st.markdown("---")
         cols = st.columns(4)
