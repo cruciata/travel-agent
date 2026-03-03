@@ -12,47 +12,39 @@ from tools.food_search import search_cities_by_food, get_food_recommendations
 from tools.backgrounds import get_multi_city_background
 from tools.attraction_details import get_attraction_detail, get_city_transport
 
-# 使用 Google Material Icons (通过CDN)
-st.markdown("""
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-<style>
-.material-icons-round {
-    font-family: 'Material Icons Round';
-    font-weight: normal;
-    font-style: normal;
-    font-size: 18px;
-    line-height: 1;
-    letter-spacing: normal;
-    text-transform: none;
-    display: inline-block;
-    white-space: nowrap;
-    word-wrap: normal;
-    direction: ltr;
-    -webkit-font-feature-settings: 'liga';
-    -webkit-font-smoothing: antialiased;
-    vertical-align: middle;
-}
-</style>
-""", unsafe_allow_html=True)
+# 读取本地SVG图标
+def get_svg_icon(icon_name):
+    """读取本地SVG图标文件"""
+    try:
+        with open(f'static/icons/{icon_name}.svg', 'r') as f:
+            svg_content = f.read()
+            # 提取svg标签内容，添加内联样式
+            svg_content = svg_content.replace('fill="#5f6368"', 'fill="currentColor"')
+            svg_content = svg_content.replace('height="24px"', 'height="18px"')
+            svg_content = svg_content.replace('width="24px"', 'width="18px"')
+            svg_content = svg_content.replace('<svg', '<svg style="vertical-align:middle;margin-right:4px;"')
+            return svg_content
+    except:
+        return ''
 
-# 图标映射 (使用Material Icons名称)
+# 图标映射
 ICONS = {
-    'pin': '<span class="material-icons-round">location_on</span>',
-    'clock': '<span class="material-icons-round">schedule</span>',
-    'ticket': '<span class="material-icons-round">confirmation_number</span>',
-    'star': '<span class="material-icons-round">star</span>',
-    'lightbulb': '<span class="material-icons-round">lightbulb</span>',
-    'bus': '<span class="material-icons-round">directions_bus</span>',
-    'walking': '<span class="material-icons-round">directions_walk</span>',
-    'plane': '<span class="material-icons-round">flight</span>',
-    'train': '<span class="material-icons-round">train</span>',
-    'search': '<span class="material-icons-round">search</span>',
-    'utensils': '<span class="material-icons-round">restaurant</span>',
-    'wallet': '<span class="material-icons-round">account_balance_wallet</span>',
-    'arrow': '<span class="material-icons-round">arrow_forward</span>',
-    'check': '<span class="material-icons-round">check</span>',
-    'trash': '<span class="material-icons-round">delete</span>',
-    'info': '<span class="material-icons-round">info</span>',
+    'pin': get_svg_icon('location_on'),
+    'clock': get_svg_icon('schedule'),
+    'ticket': get_svg_icon('confirmation_number'),
+    'star': get_svg_icon('star'),
+    'lightbulb': get_svg_icon('lightbulb'),
+    'bus': get_svg_icon('directions_bus'),
+    'walking': get_svg_icon('directions_walk'),
+    'plane': get_svg_icon('flight'),
+    'train': get_svg_icon('train'),
+    'search': get_svg_icon('search'),
+    'utensils': get_svg_icon('restaurant'),
+    'wallet': get_svg_icon('account_balance_wallet'),
+    'arrow': get_svg_icon('arrow_forward'),
+    'check': get_svg_icon('check'),
+    'trash': get_svg_icon('delete'),
+    'info': get_svg_icon('info'),
 }
 
 def icon(name):
