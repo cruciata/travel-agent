@@ -1,6 +1,6 @@
 """
-范の旅行小助手 - 基础图标版
-使用简单emoji图标，确保正常显示
+范の旅行小助手 - SVG图标版
+使用简单SVG图标，确保正常显示
 """
 import streamlit as st
 from main import ReActAgent
@@ -11,6 +11,29 @@ from tools.travel_costs import optimize_route_by_budget
 from tools.food_search import search_cities_by_food, get_food_recommendations
 from tools.backgrounds import get_multi_city_background
 from tools.attraction_details import get_attraction_detail, get_city_transport
+
+# 简单SVG图标
+ICONS = {
+    'pin': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>',
+    'clock': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
+    'ticket': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"></rect><path d="M16 3v4M8 3v4M3 11h18"></path></svg>',
+    'star': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>',
+    'lightbulb': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6v2h8v-2c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"></path></svg>',
+    'bus': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M6 18v2M18 18v2M6 10h12M7 6V3M17 6V3"></path></svg>',
+    'walking': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 4v6m4 4h2l-3-8-4-2-2 5-3 3v4l2 2 1-3h2v5l-2 4h3l2-4v-5"></path></svg>',
+    'plane': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M13 2v20m8-8l-5-5m5 5l-5 5"></path></svg>',
+    'train': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="16" rx="2"></rect><path d="M4 11h16M12 3v8"></path></svg>',
+    'search': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>',
+    'utensils': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>',
+    'wallet': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12V8H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14v-4"></path><path d="M17 12h.01"></path></svg>',
+    'arrow': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>',
+    'check': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    'trash': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>',
+    'info': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>',
+}
+
+def icon(name):
+    return ICONS.get(name, '')
 
 # 页面配置
 st.set_page_config(
@@ -84,7 +107,6 @@ st.markdown("""
         border-color: #1a1a1a !important;
     }
     
-    /* 步骤指示器 */
     .step-box {
         background: #f8f8f8;
         border-left: 3px solid #1a1a1a;
@@ -94,7 +116,6 @@ st.markdown("""
         font-size: 14px;
     }
     
-    /* 景点详情卡片 */
     .attraction-detail-card {
         background: #fafafa;
         border: 1px solid #e8e8e8;
@@ -123,12 +144,10 @@ st.markdown("""
     
     .attraction-detail-icon {
         color: #999;
-        font-size: 14px;
         width: 20px;
         text-align: center;
     }
     
-    /* 交通卡片 */
     .transport-card {
         background: #f5f5f5;
         border: 1px solid #e0e0e0;
@@ -144,19 +163,6 @@ st.markdown("""
     .transport-icon {
         font-size: 16px;
     }
-    
-    /* 两列布局 */
-    .two-column-layout {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-    
-    @media (max-width: 768px) {
-        .two-column-layout {
-            grid-template-columns: 1fr;
-        }
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -170,55 +176,52 @@ def init_agent(budget, points, days, food_enabled):
     return agent
 
 def display_attraction_details(attraction_name):
-    """显示景点详细攻略"""
     detail = get_attraction_detail(attraction_name)
     
     st.markdown(f"""
     <div class="attraction-detail-card">
-        <div class="attraction-detail-header">📍 {attraction_name}</div>
+        <div class="attraction-detail-header">{icon('pin')} {attraction_name}</div>
         <div class="attraction-detail-row">
-            <span class="attraction-detail-icon">⏱️</span>
+            <span class="attraction-detail-icon">{icon('clock')}</span>
             <span>建议游玩时间：<strong>{detail['duration']}</strong></span>
         </div>
         <div class="attraction-detail-row">
-            <span class="attraction-detail-icon">🎫</span>
+            <span class="attraction-detail-icon">{icon('ticket')}</span>
             <span>门票价格：<strong>{detail['ticket']}</strong></span>
         </div>
         <div class="attraction-detail-row">
-            <span class="attraction-detail-icon">⭐</span>
+            <span class="attraction-detail-icon">{icon('star')}</span>
             <span>最佳时段：{detail['best_time']}</span>
         </div>
         <div class="attraction-detail-row">
-            <span class="attraction-detail-icon">💡</span>
+            <span class="attraction-detail-icon">{icon('lightbulb')}</span>
             <span>游玩建议：{detail['tips']}</span>
         </div>
         <div class="attraction-detail-row">
-            <span class="attraction-detail-icon">🚌</span>
+            <span class="attraction-detail-icon">{icon('bus')}</span>
             <span>交通：{', '.join([f"{k}: {v}" for k, v in detail['transport'].items()])}</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
 def display_inter_attraction_transport(from_attr, to_attr):
-    """显示景点之间的交通"""
     st.markdown(f"""
     <div class="transport-card">
-        <span class="transport-icon">🚶</span>
+        <span class="transport-icon">{icon('walking')}</span>
         <span><strong>{from_attr} → {to_attr}</strong> | 建议步行或打车，约10-20分钟</span>
     </div>
     """, unsafe_allow_html=True)
 
 def display_react_steps(history):
-    """显示ReAct执行过程"""
     for step in history:
         status = step["status"]
         content = step["content"]
         if "思考" in status.value:
-            st.markdown(f'<div class="step-box"><strong>💭 思考</strong><br>{content}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="step-box"><strong>{icon("lightbulb")} 思考</strong><br>{content}</div>', unsafe_allow_html=True)
         elif "行动" in status.value:
-            st.markdown(f'<div class="step-box"><strong>⚡ 行动</strong><br>{content}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="step-box"><strong>{icon("arrow")} 行动</strong><br>{content}</div>', unsafe_allow_html=True)
         elif "结果" in status.value:
-            st.markdown(f'<div class="step-box"><strong>✓ 结果</strong><br>{content}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="step-box"><strong>{icon("check")} 结果</strong><br>{content}</div>', unsafe_allow_html=True)
 
 def toggle_city(city):
     if city in st.session_state.selected_cities:
@@ -247,9 +250,9 @@ def display_city_attractions_selector(city):
     
     selected = st.session_state.selected_attractions.get(city, [])
     
-    st.markdown(f"**📍 {city}的景点**")
+    st.markdown(f"**{icon('pin')} {city}的景点**")
     
-    attr_search = st.text_input(f"🔍 搜索景点", placeholder="输入景点名...", key=f"attr_search_{city}")
+    attr_search = st.text_input(f"{icon('search')} 搜索景点", placeholder="输入景点名...", key=f"attr_search_{city}")
     
     display_attractions = attractions
     if attr_search:
@@ -269,18 +272,18 @@ def display_city_attractions_selector(city):
         st.caption(f"已选择 {len(selected)} 个景点")
 
 def main():
-    st.title("范の旅行小助手 ✈️")
+    st.title("范の旅行小助手")
     st.caption("多城市智能规划 · 机票酒店优化 · 美食反向搜索")
     
     with st.sidebar:
-        st.markdown("## ⚙️ 旅行配置")
+        st.markdown(f"## {icon('pin')} 旅行配置")
         
-        tab1, tab2, tab3 = st.tabs(["🌍 城市", "🍜 美食", "💰 预算"])
+        tab1, tab2, tab3 = st.tabs([f"{icon('pin')} 城市", f"{icon('utensils')} 美食", f"{icon('wallet')} 预算"])
         
         with tab1:
             st.markdown("### 选择城市")
             
-            search_keyword = st.text_input("🔍 搜索城市", placeholder="输入城市名...")
+            search_keyword = st.text_input(f"{icon('search')} 搜索城市", placeholder="输入城市名...")
             
             if search_keyword:
                 matched = search_cities(search_keyword)
@@ -291,7 +294,7 @@ def main():
                             st.write(city)
                         with col2:
                             if city in st.session_state.selected_cities:
-                                st.markdown("✓ 已选")
+                                st.markdown(f"{icon('check')} 已选")
                             else:
                                 if st.button(f"➕ 添加", key=f"search_add_{city}"):
                                     toggle_city(city)
@@ -313,12 +316,12 @@ def main():
                 st.markdown("### 已选城市及景点")
                 
                 for city in st.session_state.selected_cities:
-                    with st.expander(f"🏙️ {city}", expanded=True):
+                    with st.expander(f"{icon('pin')} {city}", expanded=True):
                         col1, col2 = st.columns([4, 1])
                         with col1:
                             st.markdown(f"**{city}**")
                         with col2:
-                            if st.button("❌ 删除", key=f"remove_{city}"):
+                            if st.button(f"{icon('trash')} 删除", key=f"remove_{city}"):
                                 toggle_city(city)
                                 st.rerun()
                         
@@ -327,7 +330,7 @@ def main():
         with tab2:
             st.markdown("### 根据美食找城市")
             
-            food_search = st.text_input("🍴 输入美食名称", placeholder="如：火锅、烤鸭、小笼包...")
+            food_search = st.text_input(f"{icon('utensils')} 输入美食名称", placeholder="如：火锅、烤鸭、小笼包...")
             
             if food_search:
                 results = search_cities_by_food(food_search)
@@ -344,7 +347,7 @@ def main():
                                     toggle_city(city)
                                     st.rerun()
                             else:
-                                st.markdown("✓")
+                                st.markdown(f"{icon('check')}")
                 else:
                     st.warning("未找到相关城市")
             
@@ -352,18 +355,17 @@ def main():
             st.markdown("**热门美食推荐**")
             recommendations = get_food_recommendations()
             for rec in recommendations[:5]:
-                with st.expander(f"🍽️ {rec['food']}"):
+                with st.expander(f"{icon('utensils')} {rec['food']}"):
                     st.write(f"推荐城市: {', '.join(rec['cities'][:3])}")
         
         with tab3:
-            budget = st.number_input("💰 总预算 (元)", min_value=1000, max_value=100000, value=5000, step=1000)
-            days = st.slider("📅 总天数", min_value=1, max_value=15, value=5)
-            food_enabled = st.toggle("🍜 开启美食推荐", value=True)
+            budget = st.number_input(f"{icon('wallet')} 总预算 (元)", min_value=1000, max_value=100000, value=5000, step=1000)
+            days = st.slider(f"{icon('clock')} 总天数", min_value=1, max_value=15, value=5)
+            food_enabled = st.toggle(f"{icon('utensils')} 开启美食推荐", value=True)
         
         st.markdown("---")
-        start_planning = st.button("🚀 开始规划", type="primary", use_container_width=True)
+        start_planning = st.button(f"{icon('arrow')} 开始规划", type="primary", use_container_width=True)
     
-    # 计算days_per_city
     days_per_city = {}
     if st.session_state.selected_cities:
         remaining_days = days if 'days' in locals() else 5
@@ -377,19 +379,17 @@ def main():
     
     if start_planning:
         if not st.session_state.selected_cities:
-            st.error("⚠️ 请至少选择一个城市！")
+            st.error("请至少选择一个城市！")
             return
         
-        # 自动推荐景点
         for city in st.session_state.selected_cities:
             if city not in st.session_state.selected_attractions or not st.session_state.selected_attractions[city]:
                 attractions = get_attractions(city)
                 if attractions:
                     st.session_state.selected_attractions[city] = attractions[:3]
-                    st.info(f"✓ 已自动为{city}推荐 {len(attractions[:3])} 个热门景点")
+                    st.info(f"已自动为{city}推荐 {len(attractions[:3])} 个热门景点")
         
-        # 旅行概览
-        st.markdown("### 📊 旅行概览")
+        st.markdown("### 旅行概览")
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("城市数", len(st.session_state.selected_cities))
@@ -399,10 +399,9 @@ def main():
         with col3:
             st.metric("天数", f"{days}天")
         
-        # 多城市路线规划
         if len(st.session_state.selected_cities) > 1:
             st.markdown("---")
-            st.markdown("### ✈️ 多城市路线规划")
+            st.markdown("### 多城市路线规划")
             
             plan_result = optimize_route_by_budget(st.session_state.selected_cities, budget, days_per_city)
             
@@ -418,13 +417,13 @@ def main():
             st.markdown(route_html, unsafe_allow_html=True)
             
             if plan_result.get("flights"):
-                st.markdown("#### ✈️ 航班信息")
+                st.markdown("#### 航班信息")
                 for flight in plan_result["flights"]:
                     st.markdown(f"""
                     <div style="background:#ffffff;border:1px solid #e8e8e8;border-radius:6px;padding:12px;margin:8px 0;">
                         <strong>{flight['from']} → {flight['to']}</strong>
                         <span style="float:right;color:#1a1a1a;font-weight:500;">¥{flight['economy']}</span>
-                        <br><small style="color:#666;">⏱️ {flight['duration']}小时 | {flight['distance']}km</small>
+                        <br><small style="color:#666;">{icon('clock')} {flight['duration']}小时 | {flight['distance']}km</small>
                     </div>
                     """, unsafe_allow_html=True)
             
@@ -442,7 +441,6 @@ def main():
                 else:
                     st.metric("超支", f"¥{abs(diff)}", delta="超出预算", delta_color="inverse")
         
-        # 各城市详细攻略 - 平级显示执行过程
         st.markdown("---")
         
         for city in st.session_state.selected_cities:
@@ -452,8 +450,7 @@ def main():
             
             city_days = days_per_city.get(city, 1)
             
-            with st.expander(f"🏙️ {city} ({len(selected)}个景点)", expanded=True):
-                # 运行规划获取路线和执行过程
+            with st.expander(f"{city} ({len(selected)}个景点)", expanded=True):
                 with st.spinner(f"规划{city}路线中..."):
                     agent = init_agent(
                         budget // len(st.session_state.selected_cities),
@@ -465,14 +462,12 @@ def main():
                 
                 optimized_route = result['route']
                 
-                # 两列布局：左边景点攻略，右边执行过程
                 left_col, right_col = st.columns([2, 1])
                 
                 with left_col:
-                    st.markdown(f"**📍 优化路线**: {' → '.join(optimized_route)}")
+                    st.markdown(f"**{icon('pin')} 优化路线**: {' → '.join(optimized_route)}")
                     
-                    # 景点详细攻略
-                    st.markdown("#### 📋 景点详细攻略")
+                    st.markdown("#### 景点详细攻略")
                     for i, attr in enumerate(optimized_route):
                         is_last = (i == len(optimized_route) - 1)
                         display_attraction_details(attr)
@@ -481,17 +476,15 @@ def main():
                             next_attr = optimized_route[i + 1]
                             display_inter_attraction_transport(attr, next_attr)
                     
-                    # 天气
                     if result.get('weather', {}).get('forecast'):
-                        st.markdown("#### 🌤️ 天气预报")
+                        st.markdown(f"#### 天气预报")
                         weather_cols = st.columns(len(result['weather']['forecast']))
                         for i, day in enumerate(result['weather']['forecast']):
                             with weather_cols[i]:
                                 st.metric(f"第{day['day']}天", f"{day['temp_high']}°C", f"{day['condition']}")
                     
-                    # 美食
                     if food_enabled:
-                        st.markdown(f"#### 🍜 {city}美食推荐")
+                        st.markdown(f"#### 美食推荐")
                         food_data = get_food_for_city(city)
                         if food_data.get("must_eat"):
                             for r in food_data["must_eat"][:3]:
@@ -499,25 +492,24 @@ def main():
                                 st.markdown(f"• **{r['name']}** ⭐{r['rating']} ¥{r['price']}/人 · {tags}")
                 
                 with right_col:
-                    # 执行过程（平级显示在右侧）
-                    st.markdown("#### 🔄 执行过程")
+                    st.markdown("#### 执行过程")
                     display_react_steps(agent.history)
     
     else:
         st.markdown("---")
-        st.subheader("👋 欢迎使用范の旅行小助手")
+        st.subheader("欢迎使用范の旅行小助手")
         
         st.markdown("**核心功能**")
-        st.markdown("- 🌍 **多城市规划** — 一次旅行规划多个城市，自动优化路线")
-        st.markdown("- ✈️ **机票酒店优化** — 根据实时价格规划最经济的方案")
-        st.markdown("- 🍜 **美食反向搜索** — 输入美食名称，找到最地道的城市")
-        st.markdown("- 📋 **景点详细攻略** — 游玩时间、门票、交通一站式信息")
+        st.markdown(f"- {icon('pin')} **多城市规划** — 一次旅行规划多个城市，自动优化路线")
+        st.markdown(f"- {icon('plane')} **机票酒店优化** — 根据实时价格规划最经济的方案")
+        st.markdown(f"- {icon('utensils')} **美食反向搜索** — 输入美食名称，找到最地道的城市")
+        st.markdown(f"- {icon('star')} **景点详细攻略** — 游玩时间、门票、交通一站式信息")
         
         st.markdown("**使用步骤**")
-        st.markdown("1. 🌍 在左侧选择城市（可多选）")
-        st.markdown("2. 📍 为每个城市选择想去的景点（支持搜索）")
-        st.markdown("3. 💰 设置总预算和旅行天数")
-        st.markdown('4. 🚀 点击"开始规划"一键生成完整攻略')
+        st.markdown(f"1. {icon('pin')} 在左侧选择城市（可多选）")
+        st.markdown(f"2. {icon('star')} 为每个城市选择想去的景点（支持搜索）")
+        st.markdown(f"3. {icon('wallet')} 设置总预算和旅行天数")
+        st.markdown(f'4. {icon("arrow")} 点击"开始规划"一键生成完整攻略')
         
         st.markdown("---")
         cols = st.columns(4)
