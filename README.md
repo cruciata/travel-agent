@@ -1,34 +1,40 @@
-# 🌍 智能旅行规划Agent
+# 🌸 范の旅行小助手
 
-基于ReAct (Reasoning + Acting) 架构的智能旅行规划系统，支持**全国300+城市**，美食推荐参考**美团必吃榜**、**大众点评热门榜**。
+基于ReAct (Reasoning + Acting) 架构的智能旅行规划系统，支持**多城市旅行规划**、**机票酒店价格优化**、**美食反向搜索**，覆盖**全国300+城市**。
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)
 ![Cities](https://img.shields.io/badge/城市-300+-orange.svg)
-![Food](https://img.shields.io/badge/美食-美团/大众点评-red.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+![MultiCity](https://img.shields.io/badge/多城市-支持-purple.svg)
+![Food](https://img.shields.io/badge/美食反向搜索-支持-green.svg)
+![AutoUpdate](https://img.shields.io/badge/自动更新-每周一-yellow.svg)
 
-## ✨ 特性
+## ✨ 核心特性
 
 - 🧠 **ReAct架构** - 智能思考+行动循环，每一步清晰可见
-- 🏙️ **全国城市** - 覆盖300+城市，支持搜索选择
-- 🗺️ **路线优化** - 基于贪心算法自动规划最优游览顺序
+- 🏙️ **多城市规划** - 一次旅行规划多个城市，自动优化路线
+- ✈️ **机票酒店优化** - 根据实时价格规划最经济的旅行方案
+- 🍜 **美食反向搜索** - 输入美食名称，找到最地道的城市
+- 🏞️ **动态背景** - 根据选择的城市自动切换风景背景
 - 🌤️ **天气查询** - 实时天气预报和出行建议
 - 👥 **人流预测** - 景点拥挤程度分析和错峰建议
-- 🍜 **美食推荐** - 参考美团必吃榜、大众点评热门榜
+- 📊 **美团/大众点评** - 美食推荐参考真实榜单数据
 - ⏱️ **时间规划** - 精确计算游玩和交通时间
-- 🎨 **友好界面** - 基于Streamlit的美观Web界面
+- 🔄 **自动更新** - 每周一自动更新数据库内容
 
 ## 📁 项目结构
 
 ```
 travel-agent/
 ├── main.py                 # ReActAgent核心类
-├── app.py                  # Streamlit Web界面（支持全国城市）
+├── app.py                  # Streamlit Web界面（范の旅行小助手）
 ├── tools/
 │   ├── __init__.py
 │   ├── cities.py           # 全国城市及景点数据库（300+城市）
 │   ├── food_data.py        # 美团/大众点评美食数据
+│   ├── food_search.py      # 美食反向搜索功能
+│   ├── travel_costs.py     # 机票酒店价格数据及路线优化
+│   ├── backgrounds.py      # 城市背景图片管理
 │   ├── weather.py          # 天气查询工具
 │   ├── crowd.py            # 人流查询工具
 │   ├── route.py            # 路线规划工具
