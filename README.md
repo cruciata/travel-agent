@@ -146,6 +146,40 @@ print(result)
 - **杭州**：西湖、灵隐寺、雷峰塔、宋城
 - **西安**：兵马俑、大雁塔、华清池、城墙
 
+## 🚀 部署到GitHub
+
+### 方式一：使用部署脚本（推荐）
+
+```bash
+# 1. 获取GitHub Personal Access Token
+# 访问 https://github.com/settings/tokens → Generate new token → 勾选 repo 权限
+
+# 2. 运行部署脚本
+./deploy.sh ghp_your_token_here
+```
+
+### 方式二：手动部署
+
+```bash
+# 1. 在GitHub上创建新仓库 (https://github.com/new)
+# 仓库名: travel-agent
+
+# 2. 添加远程仓库并推送
+git remote add origin https://github.com/YOUR_USERNAME/travel-agent.git
+git branch -M main
+git push -u origin main
+```
+
+### 方式三：使用GitHub CLI
+
+```bash
+# 登录GitHub
+gh auth login
+
+# 创建并推送仓库
+gh repo create travel-agent --public --source=. --push
+```
+
 ## 🤝 贡献
 
 欢迎提交Issue和Pull Request！
