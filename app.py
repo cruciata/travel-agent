@@ -1,6 +1,6 @@
 """
-范の旅行小助手 - 极简风格修复版
-修复：days_per_city未定义错误 + 极简风格按钮
+范の旅行小助手 - Lucide图标版
+增加景点详细攻略、用时、交通方式
 """
 import streamlit as st
 from main import ReActAgent
@@ -10,6 +10,7 @@ from tools.food_data import get_food_for_city
 from tools.travel_costs import optimize_route_by_budget
 from tools.food_search import search_cities_by_food, get_food_recommendations
 from tools.backgrounds import get_multi_city_background
+from tools.attraction_details import get_attraction_detail, get_city_transport
 
 # 页面配置
 st.set_page_config(
@@ -25,186 +26,162 @@ if 'selected_cities' not in st.session_state:
 if 'selected_attractions' not in st.session_state:
     st.session_state.selected_attractions = {}
 
-# 极简风格CSS
-def get_minimal_css():
-    bg_url = get_multi_city_background(st.session_state.selected_cities) if st.session_state.selected_cities else ""
-    bg_style = f"""
-        .stApp {{
-            background-image: linear-gradient(rgba(255,255,255,0.92), rgba(255,255,255,0.95)), url("{bg_url}");
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }}
-    """ if bg_url else ".stApp { background: #fafafa; }"
-    
-    return f"""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-        
-        {bg_style}
-        
-        * {{ font-family: 'Inter', sans-serif !important; }}
-        
-        /* 内容区域 */
-        .main .block-container {{
-            background: rgba(255,255,255,0.98);
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            padding: 32px;
-            max-width: 1000px;
-        }}
-        
-        /* 侧边栏 */
-        [data-testid="stSidebar"] {{
-            background: #ffffff !important;
-            border-right: 1px solid #e0e0e0;
-        }}
-        
-        /* 隐藏展开按钮 */
-        button[kind="header"] {{ display: none !important; }}
-        
-        /* 标题 */
-        h1 {{ font-size: 26px !important; font-weight: 600 !important; color: #212121; letter-spacing: -0.5px; }}
-        h2 {{ font-size: 18px !important; font-weight: 600 !important; color: #212121; }}
-        h3 {{ font-size: 13px !important; font-weight: 600 !important; color: #757575; text-transform: uppercase; letter-spacing: 0.5px; }}
-        
-        /* 按钮 - 极简黑色 */
-        .stButton > button {{
-            background: #212121 !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 6px !important;
-            padding: 8px 16px !important;
-            font-size: 13px !important;
-            font-weight: 500 !important;
-            transition: all 0.2s ease;
-        }}
-        .stButton > button:hover {{
-            background: #000000 !important;
-            transform: translateY(-1px);
-        }}
-        
-        /* 次要按钮 - 线框 */
-        .stButton > button[kind="secondary"] {{
-            background: transparent !important;
-            color: #757575 !important;
-            border: 1px solid #e0e0e0 !important;
-        }}
-        .stButton > button[kind="secondary"]:hover {{
-            background: #212121 !important;
-            color: white !important;
-            border-color: #212121 !important;
-        }}
-        
-        /* 城市卡片 */
-        .stButton > button[data-testid*="pop_"] {{
-            background: #ffffff !important;
-            color: #757575 !important;
-            border: 1px solid #e0e0e0 !important;
-        }}
-        .stButton > button[data-testid*="pop_"]:hover {{
-            border-color: #212121 !important;
-            color: #212121 !important;
-        }}
-        
-        /* 城市卡片 - 选中状态 */
-        .city-card-selected {{
-            background: #212121 !important;
-            color: white !important;
-            border-color: #212121 !important;
-        }}
-        
-        /* 景点标签 */
-        .attraction-tag {{
-            display: inline-block;
-            padding: 6px 12px;
-            margin: 4px;
-            background: #f5f5f5;
-            border: 1px solid #e0e0e0;
-            border-radius: 16px;
-            font-size: 13px;
-            color: #757575;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }}
-        .attraction-tag:hover {{
-            background: #eeeeee;
-            border-color: #bdbdbd;
-        }}
-        .attraction-tag.selected {{
-            background: #212121;
-            color: white;
-            border-color: #212121;
-        }}
-        
-        /* 输入框 */
-        .stTextInput > div > div > input {{
-            border: 1px solid #e0e0e0 !important;
-            border-radius: 6px !important;
-            padding: 10px 14px !important;
-        }}
-        .stTextInput > div > div > input:focus {{
-            border-color: #212121 !important;
-            box-shadow: 0 0 0 2px rgba(33,33,33,0.1) !important;
-        }}
-        
-        /* 折叠面板 */
-        .streamlit-expanderHeader {{
-            background: #fafafa !important;
-            border: 1px solid #e0e0e0 !important;
-            border-radius: 6px !important;
-        }}
-        
-        /* 标签页 */
-        .stTabs [data-baseweb="tab-list"] {{
-            background: #fafafa;
-            border-radius: 6px;
-            padding: 4px;
-        }}
-        .stTabs [aria-selected="true"] {{
-            background: #ffffff !important;
-            color: #212121 !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }}
-        
-        /* 已选城市 */
-        .selected-city-item {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 12px;
-            background: #fafafa;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            border: 1px solid #e0e0e0;
-        }}
-        
-        /* 步骤指示器 */
-        .step-thinking {{
-            background: #f5f5f5;
-            border-left: 3px solid #212121;
-            border-radius: 0 6px 6px 0;
-            padding: 10px 14px;
-            margin: 6px 0;
-        }}
-        .step-acting {{
-            background: #fafafa;
-            border-left: 3px solid #757575;
-            border-radius: 0 6px 6px 0;
-            padding: 10px 14px;
-            margin: 6px 0;
-        }}
-        .step-observing {{
-            background: #f0f0f0;
-            border-left: 3px solid #424242;
-            border-radius: 0 6px 6px 0;
-            padding: 10px 14px;
-            margin: 6px 0;
-        }}
-    </style>
-    """
+# Lucide图标SVG
+ICONS = {
+    'map-pin': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+    'utensils': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>',
+    'wallet': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>',
+    'search': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>',
+    'plane': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"/><path d="M13 2v20"/><path d="m21 12-5-5"/><path d="m21 12-5 5"/></svg>',
+    'train': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="3" rx="2"/><path d="M4 11h16"/><path d="M12 3v8"/><path d="m8 19-2 3"/><path d="m18 22-2-3"/><path d="M8 15h0"/><path d="M16 15h0"/></svg>',
+    'clock': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    'ticket': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>',
+    'lightbulb': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>',
+    'star': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+    'arrow-right': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
+    'bus': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/></svg>',
+    'footprints': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 13 3.8 13 7v7"/><path d="M4 18c0 1.1.9 2 2 2h2v-4H6a2 2 0 0 0-2 2Z"/><path d="M13 14v7"/><path d="M13 21h6a2 2 0 0 0 2-2v-5h-8v7Z"/></svg>',
+    'check': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+    'trash': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>',
+    'info': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
+}
 
-st.markdown(get_minimal_css(), unsafe_allow_html=True)
+# 极简风格CSS
+st.markdown("""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+    * { font-family: 'Inter', -apple-system, sans-serif !important; }
+    
+    .stApp { background: #fafafa; }
+    
+    .main .block-container {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        padding: 32px;
+        max-width: 1000px;
+    }
+    
+    [data-testid="stSidebar"] {
+        background: #ffffff !important;
+        border-right: 1px solid #e8e8e8;
+    }
+    
+    button[kind="header"] { display: none !important; }
+    
+    h1 { font-size: 24px !important; font-weight: 600 !important; color: #1a1a1a; letter-spacing: -0.5px; }
+    h2 { font-size: 18px !important; font-weight: 600 !important; color: #1a1a1a; }
+    h3 { font-size: 12px !important; font-weight: 600 !important; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    /* 按钮 */
+    .stButton > button {
+        background: #1a1a1a !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 8px 16px !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+    }
+    .stButton > button:hover { background: #000 !important; }
+    
+    .stButton > button[kind="secondary"] {
+        background: transparent !important;
+        color: #666 !important;
+        border: 1px solid #ddd !important;
+    }
+    .stButton > button[kind="secondary"]:hover {
+        background: #1a1a1a !important;
+        color: white !important;
+        border-color: #1a1a1a !important;
+    }
+    
+    /* 输入框 */
+    .stTextInput > div > div > input {
+        border: 1px solid #e0e0e0 !important;
+        border-radius: 6px !important;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: #1a1a1a !important;
+    }
+    
+    /* 步骤指示器 */
+    .step-thinking { background: #f5f5f5; border-left: 3px solid #1a1a1a; padding: 12px 16px; margin: 8px 0; border-radius: 0 6px 6px 0; }
+    .step-acting { background: #fafafa; border-left: 3px solid #999; padding: 12px 16px; margin: 8px 0; border-radius: 0 6px 6px 0; }
+    .step-observing { background: #f0f0f0; border-left: 3px solid #666; padding: 12px 16px; margin: 8px 0; border-radius: 0 6px 6px 0; }
+    
+    /* 景点详情卡片 */
+    .attraction-detail-card {
+        background: #fafafa;
+        border: 1px solid #e8e8e8;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 12px 0;
+    }
+    
+    .attraction-detail-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 15px;
+        color: #1a1a1a;
+        margin-bottom: 12px;
+    }
+    
+    .attraction-detail-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin: 8px 0;
+        font-size: 13px;
+        color: #555;
+    }
+    
+    .attraction-detail-icon {
+        color: #999;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+    
+    /* 交通方式 */
+    .transport-card {
+        background: #f8f8f8;
+        border: 1px solid #e8e8e8;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin: 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .transport-icon {
+        color: #1a1a1a;
+    }
+    
+    .transport-info {
+        flex: 1;
+    }
+    
+    .transport-type {
+        font-weight: 600;
+        font-size: 13px;
+        color: #1a1a1a;
+    }
+    
+    .transport-detail {
+        font-size: 12px;
+        color: #666;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+def icon(name):
+    """获取Lucide图标"""
+    return ICONS.get(name, '')
 
 def init_agent(budget, points, days, food_enabled):
     agent = ReActAgent(budget, points, days, food_enabled)
@@ -216,32 +193,77 @@ def init_agent(budget, points, days, food_enabled):
     return agent
 
 def display_react_steps(history):
-    st.markdown("### 执行过程")
+    st.markdown(f"### {icon('info')} 执行过程")
     for step in history:
         status = step["status"]
         content = step["content"]
         if "思考" in status.value:
-            st.markdown(f'<div class="step-thinking"><strong>💭 思考</strong><br>{content}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="step-thinking"><strong>{icon("lightbulb")} 思考</strong><br>{content}</div>', unsafe_allow_html=True)
         elif "行动" in status.value:
-            st.markdown(f'<div class="step-acting"><strong>⚡ 行动</strong><br>{content}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="step-acting"><strong>{icon("arrow-right")} 行动</strong><br>{content}</div>', unsafe_allow_html=True)
         elif "结果" in status.value:
-            st.markdown(f'<div class="step-observing"><strong>✓ 结果</strong><br>{content}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="step-observing"><strong>{icon("check")} 结果</strong><br>{content}</div>', unsafe_allow_html=True)
+
+def display_attraction_details(attraction_name, is_last=False):
+    """显示景点详细攻略"""
+    detail = get_attraction_detail(attraction_name)
+    
+    st.markdown(f"""
+    <div class="attraction-detail-card">
+        <div class="attraction-detail-header">
+            {icon('map-pin')} {attraction_name}
+        </div>
+        <div class="attraction-detail-row">
+            <span class="attraction-detail-icon">{icon('clock')}</span>
+            <span>建议游玩时间：<strong>{detail['duration']}</strong></span>
+        </div>
+        <div class="attraction-detail-row">
+            <span class="attraction-detail-icon">{icon('ticket')}</span>
+            <span>门票价格：<strong>{detail['ticket']}</strong></span>
+        </div>
+        <div class="attraction-detail-row">
+            <span class="attraction-detail-icon">{icon('star')}</span>
+            <span>最佳时段：{detail['best_time']}</span>
+        </div>
+        <div class="attraction-detail-row">
+            <span class="attraction-detail-icon">{icon('lightbulb')}</span>
+            <span>游玩建议：{detail['tips']}</span>
+        </div>
+        <div class="attraction-detail-row">
+            <span class="attraction-detail-icon">{icon('bus')}</span>
+            <span>交通：{', '.join([f"{k}: {v}" for k, v in detail['transport'].items()])}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 如果不是最后一个景点，显示到下一个景点的交通
+    if not is_last:
+        st.markdown("---")
+
+def display_inter_attraction_transport(from_attr, to_attr, city):
+    """显示景点之间的交通"""
+    st.markdown(f"""
+    <div class="transport-card">
+        <span class="transport-icon">{icon('footprints')}</span>
+        <div class="transport-info">
+            <div class="transport-type">从 {from_attr} 到 {to_attr}</div>
+            <div class="transport-detail">建议步行或打车，约10-20分钟</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 def toggle_city(city):
-    """切换城市选择"""
     if city in st.session_state.selected_cities:
         st.session_state.selected_cities.remove(city)
         if city in st.session_state.selected_attractions:
             del st.session_state.selected_attractions[city]
     else:
         st.session_state.selected_cities.append(city)
-        # 自动添加推荐的景点（前3个）
         attractions = get_attractions(city)
         if attractions:
             st.session_state.selected_attractions[city] = attractions[:3]
 
 def toggle_attraction(city, attraction):
-    """切换景点选择"""
     if city not in st.session_state.selected_attractions:
         st.session_state.selected_attractions[city] = []
     
@@ -251,24 +273,20 @@ def toggle_attraction(city, attraction):
         st.session_state.selected_attractions[city].append(attraction)
 
 def display_city_attractions_selector(city):
-    """显示城市景点选择器"""
     attractions = get_attractions(city)
     if not attractions:
         return
     
     selected = st.session_state.selected_attractions.get(city, [])
     
-    st.markdown(f"**{city}的景点**")
+    st.markdown(f"**{icon('map-pin')} {city}的景点**")
     
-    # 景点搜索
-    attr_search = st.text_input(f"搜索{city}景点", placeholder="输入景点名...", key=f"attr_search_{city}")
+    attr_search = st.text_input(f"搜索景点", placeholder="输入景点名...", key=f"attr_search_{city}")
     
-    # 过滤景点
     display_attractions = attractions
     if attr_search:
         display_attractions = [a for a in attractions if attr_search.lower() in a.lower()]
     
-    # 显示景点按钮
     cols = st.columns(3)
     for i, attr in enumerate(display_attractions[:9]):
         with cols[i % 3]:
@@ -283,18 +301,18 @@ def display_city_attractions_selector(city):
         st.caption(f"已选择 {len(selected)} 个景点")
 
 def main():
-    st.title("范の旅行小助手")
+    st.title(f"范の旅行小助手")
     st.caption("多城市智能规划 · 机票酒店优化 · 美食反向搜索")
     
     with st.sidebar:
-        st.markdown("## 旅行配置")
+        st.markdown(f"## {icon('map-pin')} 旅行配置")
         
-        tab1, tab2, tab3 = st.tabs(["城市", "美食", "预算"])
+        tab1, tab2, tab3 = st.tabs([f"{icon('map-pin')} 城市", f"{icon('utensils')} 美食", f"{icon('wallet')} 预算"])
         
         with tab1:
             st.markdown("### 选择城市")
             
-            search_keyword = st.text_input("搜索城市", placeholder="输入城市名...")
+            search_keyword = st.text_input(f"{icon('search')} 搜索城市", placeholder="输入城市名...")
             
             if search_keyword:
                 matched = search_cities(search_keyword)
@@ -305,7 +323,7 @@ def main():
                             st.write(city)
                         with col2:
                             if city in st.session_state.selected_cities:
-                                st.markdown("✓ 已选")
+                                st.markdown(f"{icon('check')} 已选")
                             else:
                                 if st.button(f"添加##{city}", key=f"search_add_{city}"):
                                     toggle_city(city)
@@ -332,7 +350,7 @@ def main():
                         with col1:
                             st.markdown(f"**{city}**")
                         with col2:
-                            if st.button("删除", key=f"remove_{city}"):
+                            if st.button(f"{icon('trash')} 删除", key=f"remove_{city}"):
                                 toggle_city(city)
                                 st.rerun()
                         
@@ -341,7 +359,7 @@ def main():
         with tab2:
             st.markdown("### 根据美食找城市")
             
-            food_search = st.text_input("输入美食名称", placeholder="如：火锅、烤鸭、小笼包...")
+            food_search = st.text_input(f"{icon('utensils')} 输入美食名称", placeholder="如：火锅、烤鸭、小笼包...")
             
             if food_search:
                 results = search_cities_by_food(food_search)
@@ -358,7 +376,7 @@ def main():
                                     toggle_city(city)
                                     st.rerun()
                             else:
-                                st.markdown("✓")
+                                st.markdown(f"{icon('check')}")
                 else:
                     st.warning("未找到相关城市")
             
@@ -366,18 +384,18 @@ def main():
             st.markdown("**热门美食推荐**")
             recommendations = get_food_recommendations()
             for rec in recommendations[:5]:
-                with st.expander(rec['food']):
+                with st.expander(f"{icon('utensils')} {rec['food']}"):
                     st.write(f"推荐城市: {', '.join(rec['cities'][:3])}")
         
         with tab3:
-            budget = st.number_input("总预算 (元)", min_value=1000, max_value=100000, value=5000, step=1000)
-            days = st.slider("总天数", min_value=1, max_value=15, value=5)
-            food_enabled = st.toggle("开启美食推荐", value=True)
+            budget = st.number_input(f"{icon('wallet')} 总预算 (元)", min_value=1000, max_value=100000, value=5000, step=1000)
+            days = st.slider(f"{icon('clock')} 总天数", min_value=1, max_value=15, value=5)
+            food_enabled = st.toggle(f"{icon('utensils')} 开启美食推荐", value=True)
         
         st.markdown("---")
-        start_planning = st.button("开始规划", type="primary", use_container_width=True)
+        start_planning = st.button(f"{icon('arrow-right')} 开始规划", type="primary", use_container_width=True)
     
-    # 计算days_per_city（移到前面，避免未定义错误）
+    # 计算days_per_city
     days_per_city = {}
     if st.session_state.selected_cities:
         remaining_days = days if 'days' in locals() else 5
@@ -394,7 +412,7 @@ def main():
             st.error("请至少选择一个城市！")
             return
         
-        # 检查是否有城市没有选景点，自动使用默认推荐
+        # 自动推荐景点
         for city in st.session_state.selected_cities:
             if city not in st.session_state.selected_attractions or not st.session_state.selected_attractions[city]:
                 attractions = get_attractions(city)
@@ -402,8 +420,8 @@ def main():
                     st.session_state.selected_attractions[city] = attractions[:3]
                     st.info(f"已自动为{city}推荐 {len(attractions[:3])} 个热门景点")
         
-        # 显示输入摘要
-        st.markdown("### 旅行概览")
+        # 旅行概览
+        st.markdown(f"### {icon('map-pin')} 旅行概览")
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("城市数", len(st.session_state.selected_cities))
@@ -416,27 +434,30 @@ def main():
         # 多城市路线规划
         if len(st.session_state.selected_cities) > 1:
             st.markdown("---")
-            st.markdown("### 多城市路线规划")
+            st.markdown(f"### {icon('plane')} 多城市路线规划")
             
             plan_result = optimize_route_by_budget(st.session_state.selected_cities, budget, days_per_city)
             
             route = plan_result["route"]
             route_html = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0;">'
             for i, city in enumerate(route):
-                route_html += f'<div style="background:#212121;color:white;padding:12px 20px;border-radius:6px;font-weight:500;">{i+1}. {city}</div>'
+                route_html += f'<div style="background:#1a1a1a;color:white;padding:12px 20px;border-radius:6px;font-weight:500;">{i+1}. {city}</div>'
                 if i < len(route) - 1:
-                    route_html += '<span style="color:#757575;">→</span>'
+                    # 显示城市间交通
+                    transport = get_city_transport(city, route[i+1])
+                    transport_text = list(transport.values())[0] if transport else "建议高铁"
+                    route_html += f'<div style="color:#666;font-size:12px;text-align:center;"><span style="font-size:16px;">→</span><br/>{transport_text[:10]}...</div>'
             route_html += '</div>'
             st.markdown(route_html, unsafe_allow_html=True)
             
             if plan_result.get("flights"):
-                st.markdown("#### 航班信息")
+                st.markdown(f"#### {icon('plane')} 航班信息")
                 for flight in plan_result["flights"]:
                     st.markdown(f"""
-                    <div style="background:#ffffff;border:1px solid #e0e0e0;border-radius:6px;padding:12px;margin:8px 0;">
+                    <div style="background:#ffffff;border:1px solid #e8e8e8;border-radius:6px;padding:12px;margin:8px 0;">
                         <strong>{flight['from']} → {flight['to']}</strong>
-                        <span style="float:right;color:#212121;font-weight:500;">¥{flight['economy']}</span>
-                        <br><small style="color:#757575;">{flight['distance']}km · {flight['duration']}小时</small>
+                        <span style="float:right;color:#1a1a1a;font-weight:500;">¥{flight['economy']}</span>
+                        <br><small style="color:#666;">{icon('clock')} {flight['duration']}小时 | {flight['distance']}km</small>
                     </div>
                     """, unsafe_allow_html=True)
             
@@ -456,7 +477,7 @@ def main():
         
         # 各城市详细攻略
         st.markdown("---")
-        st.markdown("### 各城市详细攻略")
+        st.markdown(f"### {icon('map-pin')} 各城市详细攻略")
         
         for city in st.session_state.selected_cities:
             selected = st.session_state.selected_attractions.get(city, [])
@@ -466,9 +487,8 @@ def main():
             city_days = days_per_city.get(city, 1)
             
             with st.expander(f"{city} ({len(selected)}个景点)", expanded=True):
-                st.markdown(f"**游览景点**: {' → '.join(selected)}")
-                
-                with st.spinner(f"正在规划{city}的行程..."):
+                # 优化路线
+                with st.spinner(f"规划{city}路线中..."):
                     agent = init_agent(
                         budget // len(st.session_state.selected_cities),
                         selected,
@@ -477,18 +497,31 @@ def main():
                     )
                     result = agent.run()
                 
-                display_react_steps(agent.history)
-                st.markdown(f"**优化路线**: {' → '.join(result['route'])}")
+                optimized_route = result['route']
+                st.markdown(f"**{icon('arrow-right')} 优化路线**: {' → '.join(optimized_route)}")
                 
+                # 显示每个景点的详细攻略
+                st.markdown(f"#### {icon('map-pin')} 景点详细攻略")
+                for i, attr in enumerate(optimized_route):
+                    is_last = (i == len(optimized_route) - 1)
+                    display_attraction_details(attr, is_last)
+                    
+                    # 显示到下一个景点的交通
+                    if not is_last:
+                        next_attr = optimized_route[i + 1]
+                        display_inter_attraction_transport(attr, next_attr, city)
+                
+                # 天气
                 if result.get('weather', {}).get('forecast'):
-                    st.markdown("**天气预报**")
+                    st.markdown(f"**{icon('info')} 天气预报**")
                     weather_cols = st.columns(len(result['weather']['forecast']))
                     for i, day in enumerate(result['weather']['forecast']):
                         with weather_cols[i]:
                             st.metric(f"第{day['day']}天", f"{day['temp_high']}°C", f"{day['condition']}")
                 
+                # 美食
                 if food_enabled:
-                    st.markdown(f"**{city}美食推荐**")
+                    st.markdown(f"**{icon('utensils')} {city}美食推荐**")
                     food_data = get_food_for_city(city)
                     if food_data.get("must_eat"):
                         for r in food_data["must_eat"][:3]:
@@ -497,19 +530,19 @@ def main():
     
     else:
         st.markdown("---")
-        st.subheader("欢迎使用范の旅行小助手")
+        st.subheader(f"{icon('info')} 欢迎使用范の旅行小助手")
         
         st.markdown("**核心功能**")
-        st.markdown("- **多城市规划** — 一次旅行规划多个城市，自动优化路线")
-        st.markdown("- **机票酒店优化** — 根据实时价格规划最经济的方案")
-        st.markdown("- **美食反向搜索** — 输入美食名称，找到最地道的城市")
-        st.markdown("- **智能景点推荐** — 未选择景点时自动推荐热门景点")
+        st.markdown(f"- {icon('map-pin')} **多城市规划** — 一次旅行规划多个城市，自动优化路线")
+        st.markdown(f"- {icon('plane')} **机票酒店优化** — 根据实时价格规划最经济的方案")
+        st.markdown(f"- {icon('utensils')} **美食反向搜索** — 输入美食名称，找到最地道的城市")
+        st.markdown(f"- {icon('star')} **景点详细攻略** — 游玩时间、门票、交通一站式信息")
         
         st.markdown("**使用步骤**")
-        st.markdown("1. 在左侧选择城市（可多选）")
-        st.markdown("2. 为每个城市选择想去的景点（支持搜索）")
-        st.markdown("3. 设置总预算和旅行天数")
-        st.markdown('4. 点击"开始规划"一键生成完整攻略')
+        st.markdown(f"1. {icon('map-pin')} 在左侧选择城市（可多选）")
+        st.markdown(f"2. {icon('star')} 为每个城市选择想去的景点（支持搜索）")
+        st.markdown(f"3. {icon('wallet')} 设置总预算和旅行天数")
+        st.markdown(f'4. {icon('"'"'arrow-right'"'"')} 点击"开始规划"一键生成完整攻略')
         
         st.markdown("---")
         cols = st.columns(4)
