@@ -12,24 +12,47 @@ from tools.food_search import search_cities_by_food, get_food_recommendations
 from tools.backgrounds import get_multi_city_background
 from tools.attraction_details import get_attraction_detail, get_city_transport
 
-# 简单SVG图标
+# 使用 Google Material Icons (通过CDN)
+st.markdown("""
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<style>
+.material-icons-round {
+    font-family: 'Material Icons Round';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 18px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    vertical-align: middle;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# 图标映射 (使用Material Icons名称)
 ICONS = {
-    'pin': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>',
-    'clock': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
-    'ticket': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"></rect><path d="M16 3v4M8 3v4M3 11h18"></path></svg>',
-    'star': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>',
-    'lightbulb': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6v2h8v-2c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"></path></svg>',
-    'bus': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M6 18v2M18 18v2M6 10h12M7 6V3M17 6V3"></path></svg>',
-    'walking': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 4v6m4 4h2l-3-8-4-2-2 5-3 3v4l2 2 1-3h2v5l-2 4h3l2-4v-5"></path></svg>',
-    'plane': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M13 2v20m8-8l-5-5m5 5l-5 5"></path></svg>',
-    'train': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="16" rx="2"></rect><path d="M4 11h16M12 3v8"></path></svg>',
-    'search': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>',
-    'utensils': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>',
-    'wallet': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12V8H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14v-4"></path><path d="M17 12h.01"></path></svg>',
-    'arrow': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>',
-    'check': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>',
-    'trash': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>',
-    'info': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>',
+    'pin': '<span class="material-icons-round">location_on</span>',
+    'clock': '<span class="material-icons-round">schedule</span>',
+    'ticket': '<span class="material-icons-round">confirmation_number</span>',
+    'star': '<span class="material-icons-round">star</span>',
+    'lightbulb': '<span class="material-icons-round">lightbulb</span>',
+    'bus': '<span class="material-icons-round">directions_bus</span>',
+    'walking': '<span class="material-icons-round">directions_walk</span>',
+    'plane': '<span class="material-icons-round">flight</span>',
+    'train': '<span class="material-icons-round">train</span>',
+    'search': '<span class="material-icons-round">search</span>',
+    'utensils': '<span class="material-icons-round">restaurant</span>',
+    'wallet': '<span class="material-icons-round">account_balance_wallet</span>',
+    'arrow': '<span class="material-icons-round">arrow_forward</span>',
+    'check': '<span class="material-icons-round">check</span>',
+    'trash': '<span class="material-icons-round">delete</span>',
+    'info': '<span class="material-icons-round">info</span>',
 }
 
 def icon(name):
