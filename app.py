@@ -1,5 +1,6 @@
 """
-智能旅行规划Agent - Streamlit Web界面（支持全国城市）
+范の旅行小助手 - Streamlit Web界面
+支持多城市旅行规划、动态背景、美食反向搜索
 """
 import streamlit as st
 import json
@@ -7,506 +8,423 @@ from main import ReActAgent
 from tools import get_weather, get_crowd, plan_route, calculate_time, recommend_food
 from tools.cities import get_all_cities, get_attractions, search_cities, POPULAR_CITIES
 from tools.food_data import get_food_for_city
+from tools.travel_costs import plan_multi_city_route, optimize_route_by_budget, get_flight_price, get_hotel_price
+from tools.food_search import search_cities_by_food, get_food_recommendations, get_city_signature_foods
+from tools.backgrounds import get_city_background, get_multi_city_background, generate_background_css
 
 # 页面配置
 st.set_page_config(
-    page_title="🌍 智能旅行规划Agent",
-    page_icon="✈️",
+    page_title="范の旅行小助手",
+    page_icon="🌸",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 自定义样式
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #1E88E5;
-        text-align: center;
-        margin-bottom: 0.5rem;
-    }
-    .sub-header {
-        font-size: 1.1rem;
-        color: #666;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .step-thinking {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 0.8rem;
-        border-radius: 10px;
-        margin: 0.5rem 0;
-    }
-    .step-acting {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-        padding: 0.8rem;
-        border-radius: 10px;
-        margin: 0.5rem 0;
-    }
-    .step-observing {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        color: white;
-        padding: 0.8rem;
-        border-radius: 10px;
-        margin: 0.5rem 0;
-    }
-    .info-card {
-        background: #f8f9fa;
-        border-left: 4px solid #1E88E5;
-        padding: 1rem;
-        border-radius: 5px;
-        margin: 0.5rem 0;
-    }
-    .city-badge {
-        display: inline-block;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 0.3rem 0.8rem;
-        border-radius: 20px;
-        margin: 0.2rem;
-        font-size: 0.9rem;
-    }
-    .food-card {
-        background: white;
-        border: 1px solid #e0e0e0;
-        border-radius: 10px;
-        padding: 1rem;
-        margin: 0.5rem 0;
-    }
-    .rank-badge {
-        background: #ff6b6b;
-        color: white;
-        padding: 0.2rem 0.5rem;
-        border-radius: 5px;
-        font-size: 0.8rem;
-        margin-right: 0.5rem;
-    }
-</style>
-""", unsafe_allow_html=True)
+# 初始化session state
+if 'selected_cities' not in st.session_state:
+    st.session_state.selected_cities = []
+if 'current_background' not in st.session_state:
+    st.session_state.current_background = "default"
+if 'plan_generated' not in st.session_state:
+    st.session_state.plan_generated = False
+if 'active_tab' not in st.session_state:
+    st.session_state.active_tab = "城市"
+
+def apply_background():
+    """应用背景图片"""
+    if st.session_state.plan_generated and st.session_state.selected_cities:
+        bg_url = get_multi_city_background(st.session_state.selected_cities)
+    else:
+        bg_url = get_city_background("default")
+    
+    st.markdown(generate_background_css(bg_url), unsafe_allow_html=True)
+
+# 应用背景
+apply_background()
 
 def init_agent(budget, points, days, food_enabled):
     """初始化Agent并注册工具"""
     agent = ReActAgent(budget, points, days, food_enabled)
-    
-    # 注册工具
     agent.register_tool("get_weather", get_weather)
     agent.register_tool("get_crowd", get_crowd)
     agent.register_tool("plan_route", plan_route)
     agent.register_tool("calculate_time", calculate_time)
     agent.register_tool("recommend_food", recommend_food)
-    
     return agent
 
 def display_react_steps(history):
     """展示ReAct执行步骤"""
     st.markdown("### 🔄 ReAct执行过程")
-    
     for step in history:
         status = step["status"]
         content = step["content"]
-        details = step.get("details")
-        
-        if "思考" in status.value:
-            with st.container():
-                st.markdown(f"""
-                    <div class="step-thinking">
-                        🧠 <strong>思考</strong><br>{content}
-                    </div>
-                """, unsafe_allow_html=True)
-        
-        elif "行动" in status.value:
-            with st.container():
-                st.markdown(f"""
-                    <div class="step-acting">
-                        🔧 <strong>行动</strong><br>{content}
-                    </div>
-                """, unsafe_allow_html=True)
-        
-        elif "结果" in status.value:
-            with st.container():
-                st.markdown(f"""
-                    <div class="step-observing">
-                        📊 <strong>结果</strong><br>{content}
-                    </div>
-                """, unsafe_allow_html=True)
-                if details:
-                    with st.expander("查看详情"):
-                        st.json(details)
+        with st.container():
+            if "思考" in status.value:
+                st.info(f"🧠 **思考**: {content}")
+            elif "行动" in status.value:
+                st.warning(f"🔧 **行动**: {content}")
+            elif "结果" in status.value:
+                st.success(f"📊 **结果**: {content}")
+
+def display_multi_city_plan(plan_result, budget):
+    """展示多城市路线规划结果"""
+    st.markdown("### 🗺️ 多城市路线规划")
+    
+    # 路线展示
+    route = plan_result["route"]
+    route_cols = st.columns(len(route))
+    for i, city in enumerate(route):
+        with route_cols[i]:
+            st.markdown(f"""
+            <div style="text-align:center; background:linear-gradient(135deg, #667eea, #764ba2); 
+                        color:white; padding:15px; border-radius:10px;">
+                <h3>{i+1}</h3>
+                <h4>{city}</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            if i < len(route) - 1:
+                st.markdown("<div style='text-align:center; font-size:24px;'>→</div>", unsafe_allow_html=True)
+    
+    # 航班信息
+    st.markdown("#### ✈️ 航班信息")
+    for flight in plan_result.get("flights", []):
+        with st.container():
+            st.markdown(f"""
+            <div style="background:#f8f9fa; padding:15px; border-radius:10px; margin:10px 0;">
+                <strong>{flight['from']} → {flight['to']}</strong> 
+                <span style="float:right;">
+                    💰 经济舱¥{flight['economy']} / 商务舱¥{flight['business']}
+                </span>
+                <br><small>
+                    距离: {flight['distance']}km | 
+                    飞行时间: {flight['duration']}小时 | 
+                    {'直飞' if flight['direct'] else '需转机'}
+                </small>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # 酒店信息
+    st.markdown("#### 🏨 酒店预估")
+    hotel_cols = st.columns(len(plan_result.get("hotel_costs", {})))
+    for i, (city, cost) in enumerate(plan_result.get("hotel_costs", {}).items()):
+        with hotel_cols[i % 4]:
+            st.metric(city, f"¥{cost}")
+    
+    # 费用汇总
+    st.markdown("#### 💰 费用汇总")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("机票总价", f"¥{plan_result.get('total_flight_cost', 0)}")
+    with col2:
+        st.metric("酒店总价", f"¥{plan_result.get('total_hotel_cost', 0)}")
+    with col3:
+        st.metric("总费用", f"¥{plan_result.get('total_cost', 0)}")
+    with col4:
+        diff = plan_result.get('budget_diff', 0)
+        if diff >= 0:
+            st.metric("预算剩余", f"¥{diff}", delta="✅ 在预算内")
+        else:
+            st.metric("超预算", f"¥{abs(diff)}", delta="⚠️ 超出", delta_color="inverse")
 
 def display_city_food(city):
-    """展示城市美食推荐（美团/大众点评风格）"""
+    """展示城市美食推荐"""
     food_data = get_food_for_city(city)
-    
     st.markdown(f"### 🍜 {city}美食推荐")
-    st.markdown("<small>数据参考：美团必吃榜、大众点评热门榜</small>", unsafe_allow_html=True)
     
     # 必吃榜
     if food_data.get("must_eat"):
         st.markdown("**🏆 必吃榜**")
-        for i, restaurant in enumerate(food_data["must_eat"][:3], 1):
-            rank_badge = f'<span class="rank-badge">{restaurant.get("rank", "")}</span>' if restaurant.get("rank") else ""
-            tags = " ".join([f'<span style="background:#f0f0f0;padding:2px 8px;border-radius:10px;font-size:0.8rem;margin-right:5px;">{tag}</span>' for tag in restaurant.get("tags", [])])
-            
+        for restaurant in food_data["must_eat"][:3]:
+            tags = " ".join([f"`{tag}`" for tag in restaurant.get("tags", [])])
+            rank = restaurant.get("rank", "")
             st.markdown(f"""
-            <div class="food-card">
-                {rank_badge}
+            <div style="background:white; padding:12px; border-radius:8px; margin:8px 0; 
+                        border-left:4px solid #ff6b6b; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+                {'<span style="background:#ff6b6b; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">' + rank + '</span>' if rank else ''}
                 <strong>{restaurant['name']}</strong> 
                 <span style="color:#ff9500;">{'⭐' * int(restaurant['rating'])}</span> {restaurant['rating']}
-                <span style="color:#666;float:right;">💰 {restaurant['price']}元/人</span>
-                <br>
-                <small>{restaurant['type']} | {tags}</small>
+                <span style="color:#666; float:right;">💰 {restaurant['price']}元/人</span>
+                <br><small>{restaurant['type']} | {tags}</small>
             </div>
             """, unsafe_allow_html=True)
-    
-    # 热门榜
-    if food_data.get("hot"):
-        st.markdown("**🔥 热门榜**")
-        for restaurant in food_data["hot"][:2]:
-            tags = " ".join([f'<span style="background:#f0f0f0;padding:2px 8px;border-radius:10px;font-size:0.8rem;margin-right:5px;">{tag}</span>' for tag in restaurant.get("tags", [])])
-            
-            st.markdown(f"""
-            <div class="food-card">
-                <strong>{restaurant['name']}</strong> 
-                <span style="color:#ff9500;">{'⭐' * int(restaurant['rating'])}</span> {restaurant['rating']}
-                <span style="color:#666;float:right;">💰 {restaurant['price']}元/人</span>
-                <br>
-                <small>{restaurant['type']} | {tags}</small>
-            </div>
-            """, unsafe_allow_html=True)
-
-def display_itinerary(result, city):
-    """展示行程规划"""
-    st.markdown("---")
-    st.markdown("## 📅 完整旅行攻略")
-    
-    # 概览卡片
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("💰 预算", f"{result['budget']}元")
-    with col2:
-        st.metric("📅 天数", f"{result['days']}天")
-    with col3:
-        total_time = result['time'].get('total_hours', 0)
-        st.metric("⏱️ 总耗时", f"{total_time}小时")
-    with col4:
-        cost = result['total_cost_estimate']
-        st.metric("💵 预估费用", f"{cost['total']}元", 
-                 delta="✅ 在预算内" if cost['within_budget'] else "⚠️ 超出预算")
-    
-    # 路线展示
-    st.markdown("### 🗺️ 优化路线")
-    route = result['route']
-    route_str = " → ".join([f"**{p}**" for p in route])
-    st.markdown(f"<div class='info-card'>{route_str}</div>", unsafe_allow_html=True)
-    
-    # 天气信息
-    st.markdown("### 🌤️ 天气预报")
-    weather = result['weather']
-    if weather.get('forecast'):
-        weather_cols = st.columns(min(len(weather['forecast']), 7))
-        for i, day in enumerate(weather['forecast']):
-            if i < len(weather_cols):
-                with weather_cols[i]:
-                    st.markdown(f"""
-                        <div style='background: #e3f2fd; padding: 1rem; border-radius: 10px; text-align: center;'>
-                            <strong>第{day['day']}天</strong><br>
-                            {day['condition']}<br>
-                            🌡️ {day['temp_low']}°C ~ {day['temp_high']}°C<br>
-                            <small>{day['suggestion']}</small>
-                        </div>
-                    """, unsafe_allow_html=True)
-    
-    # 每日行程
-    st.markdown("### 📍 每日行程")
-    for day_plan in result['itinerary']:
-        attractions = day_plan['attractions']
-        attractions_str = " → ".join(attractions)
-        with st.expander(f"第 {day_plan['day']} 天 - {attractions_str}"):
-            for attraction in attractions:
-                st.markdown(f"**📍 {attraction}**")
-                
-                # 人流信息
-                crowd = result['crowd'].get(attraction, {})
-                if crowd:
-                    level = crowd.get('level', '未知')
-                    emoji = {"稀疏": "🟢", "适中": "🟡", "拥挤": "🔴"}.get(level, "⚪")
-                    st.markdown(f"{emoji} 人流: {level} | 等待约 {crowd.get('estimated_wait_minutes', 0)} 分钟")
-                
-                # 美食推荐
-                if result['food'] and attraction in result['food']:
-                    food_data = result['food'][attraction]
-                    if food_data.get('recommendations'):
-                        st.markdown("🍜 **附近美食:**")
-                        for i, restaurant in enumerate(food_data['recommendations'][:2], 1):
-                            st.markdown(f"   {i}. {restaurant['name']} ({restaurant['type']}) ⭐{restaurant['rating']} 💰{restaurant['price']}元")
-    
-    # 城市美食推荐（美团/大众点评风格）
-    if city:
-        display_city_food(city)
-    
-    # 费用明细
-    st.markdown("### 💳 费用明细")
-    cost = result['total_cost_estimate']
-    cost_cols = st.columns(4)
-    with cost_cols[0]:
-        st.info(f"门票: {cost['tickets']}元")
-    with cost_cols[1]:
-        st.info(f"餐饮: {cost['food']}元")
-    with cost_cols[2]:
-        st.info(f"交通: {cost['transport']}元")
-    with cost_cols[3]:
-        st.success(f"总计: {cost['total']}元")
-    
-    # 导出功能
-    st.markdown("### 📥 导出攻略")
-    if st.button("导出为JSON"):
-        json_str = json.dumps(result, ensure_ascii=False, indent=2)
-        st.download_button(
-            label="下载JSON文件",
-            data=json_str,
-            file_name=f"travel_plan_{result['days']}days.json",
-            mime="application/json"
-        )
 
 def main():
     """主函数"""
     # 标题
-    st.markdown('<div class="main-header">🌍 智能旅行规划Agent</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">基于ReAct架构 | 覆盖全国城市 | 美团/大众点评美食推荐</div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div style="text-align:center; padding:20px 0;">
+        <h1 style="font-size:3rem; color:white; text-shadow:2px 2px 4px rgba(0,0,0,0.5);">
+            🌸 范の旅行小助手
+        </h1>
+        <p style="font-size:1.2rem; color:rgba(255,255,255,0.9);">
+            多城市智能规划 · 机票酒店优化 · 美食反向搜索
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # 初始化session state
-    if 'selected_city' not in st.session_state:
-        st.session_state.selected_city = None
-    if 'search_keyword' not in st.session_state:
-        st.session_state.search_keyword = ""
-    
-    # 侧边栏输入
+    # 侧边栏 - 使用标签页组织
     with st.sidebar:
         st.markdown("## ⚙️ 旅行配置")
         
-        # 1. 城市选择（支持搜索）
-        st.markdown("### 🏙️ 选择城市")
+        tab1, tab2, tab3 = st.tabs(["🌍 城市", "🍜 美食", "💰 预算"])
         
-        # 搜索城市
-        search_keyword = st.text_input(
-            "🔍 搜索城市",
-            placeholder="输入城市名，如：成都、厦门、青岛...",
-            help="支持全国300+城市搜索"
-        )
+        with tab1:
+            st.markdown("### 选择城市（可多选）")
+            
+            # 城市搜索
+            search_keyword = st.text_input(
+                "🔍 搜索城市",
+                placeholder="输入城市名...",
+                key="city_search"
+            )
+            
+            # 搜索结果
+            if search_keyword:
+                matched = search_cities(search_keyword)
+                if matched:
+                    for city in matched[:5]:
+                        col1, col2 = st.columns([3, 1])
+                        with col1:
+                            st.write(city)
+                        with col2:
+                            if city not in st.session_state.selected_cities:
+                                if st.button("➕ 添加", key=f"add_{city}"):
+                                    st.session_state.selected_cities.append(city)
+                                    st.rerun()
+                            else:
+                                st.success("✓")
+            
+            # 热门城市快速添加
+            st.markdown("**热门城市**")
+            popular_cols = st.columns(3)
+            for i, city in enumerate(POPULAR_CITIES[:12]):
+                with popular_cols[i % 3]:
+                    is_selected = city in st.session_state.selected_cities
+                    btn_label = f"✓ {city}" if is_selected else city
+                    btn_type = "primary" if is_selected else "secondary"
+                    
+                    if st.button(btn_label, key=f"pop_{city}", type=btn_type, use_container_width=True):
+                        if is_selected:
+                            st.session_state.selected_cities.remove(city)
+                        else:
+                            st.session_state.selected_cities.append(city)
+                        st.rerun()
+            
+            # 显示已选城市
+            if st.session_state.selected_cities:
+                st.markdown("**已选城市**")
+                for city in st.session_state.selected_cities:
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        st.info(city)
+                    with col2:
+                        if st.button("❌", key=f"remove_{city}"):
+                            st.session_state.selected_cities.remove(city)
+                            st.rerun()
         
-        # 热门城市快捷选择
-        st.markdown("<small>热门城市：</small>", unsafe_allow_html=True)
-        popular_cols = st.columns(5)
-        for i, city in enumerate(POPULAR_CITIES[:10]):
-            with popular_cols[i % 5]:
-                if st.button(city, key=f"pop_{city}", use_container_width=True):
-                    st.session_state.selected_city = city
-                    st.session_state.search_keyword = ""
-                    st.rerun()
+        with tab2:
+            st.markdown("### 🍜 根据美食找城市")
+            
+            food_search = st.text_input(
+                "输入美食名称",
+                placeholder="如：火锅、烤鸭、小笼包...",
+                key="food_search"
+            )
+            
+            if food_search:
+                results = search_cities_by_food(food_search)
+                if results:
+                    st.success(f"找到 {len(results)} 个相关城市")
+                    for result in results[:5]:
+                        match_type = result["match_type"]
+                        confidence = result["confidence"]
+                        city = result["city"]
+                        food = result["food"]
+                        
+                        col1, col2 = st.columns([3, 1])
+                        with col1:
+                            st.write(f"**{city}** - {food}")
+                            st.caption(f"匹配度: {'⭐' * int(confidence * 5)}")
+                        with col2:
+                            if city not in st.session_state.selected_cities:
+                                if st.button("➕", key=f"food_add_{city}"):
+                                    st.session_state.selected_cities.append(city)
+                                    st.rerun()
+                else:
+                    st.warning("未找到相关城市，试试其他美食名称")
+            
+            st.markdown("---")
+            st.markdown("**热门美食推荐**")
+            recommendations = get_food_recommendations()
+            for rec in recommendations[:5]:
+                with st.expander(f"🍽️ {rec['food']}"):
+                    st.write(f"城市: {', '.join(rec['cities'][:3])}")
         
-        # 搜索结果
-        selected_city = None
-        if search_keyword:
-            matched_cities = search_cities(search_keyword)
-            if matched_cities:
-                selected_city = st.selectbox(
-                    f"找到 {len(matched_cities)} 个城市",
-                    matched_cities,
-                    key="search_result"
-                )
-            else:
-                st.warning(f"未找到 '{search_keyword}' 相关城市")
-        
-        # 如果没有搜索选择，使用session state中的城市
-        if not selected_city and st.session_state.selected_city:
-            selected_city = st.session_state.selected_city
-        
-        # 显示当前选择
-        if selected_city:
-            st.success(f"📍 已选择：{selected_city}")
-            st.session_state.selected_city = selected_city
-        
-        # 2. 预算输入
-        budget = st.number_input(
-            "💰 预算 (元)",
-            min_value=100,
-            max_value=50000,
-            value=2000,
-            step=100,
-            help="您的旅行总预算"
-        )
-        
-        # 3. 路线途经点（根据城市动态生成）
-        st.markdown("### 📍 选择景点")
-        
-        if selected_city:
-            attractions = get_attractions(selected_city)
-            if attractions:
-                selected_points = st.multiselect(
-                    f"{selected_city}的热门景点（可多选）",
-                    attractions,
-                    default=attractions[:2] if len(attractions) >= 2 else attractions,
-                    help=f"{selected_city}共有{len(attractions)}个推荐景点"
-                )
-            else:
-                st.warning(f"暂无{selected_city}的景点数据")
-                selected_points = []
-        else:
-            st.info("👆 请先选择城市")
-            selected_points = []
-        
-        # 自定义景点输入
-        custom_points = st.text_input(
-            "添加自定义景点（用逗号分隔）",
-            placeholder="如: 某某公园,某某街"
-        )
-        
-        # 合并景点列表
-        if custom_points:
-            custom_list = [p.strip() for p in custom_points.split(",") if p.strip()]
-            selected_points.extend(custom_list)
-        
-        # 4. 时间输入
-        days = st.slider(
-            "📅 游玩天数",
-            min_value=1,
-            max_value=7,
-            value=2,
-            help="计划游玩的天数"
-        )
-        
-        # 5. 美食推荐开关
-        food_enabled = st.toggle(
-            "🍜 开启美食推荐",
-            value=True,
-            help="参考美团必吃榜、大众点评热门榜推荐餐厅"
-        )
+        with tab3:
+            # 预算设置
+            budget = st.number_input(
+                "💰 总预算 (元)",
+                min_value=1000,
+                max_value=100000,
+                value=5000,
+                step=1000
+            )
+            
+            # 天数设置
+            days = st.slider(
+                "📅 总天数",
+                min_value=1,
+                max_value=15,
+                value=5
+            )
+            
+            # 美食推荐开关
+            food_enabled = st.toggle(
+                "🍜 开启美食推荐",
+                value=True
+            )
+            
+            st.markdown("---")
+            st.markdown(f"**当前配置**")
+            st.write(f"城市: {len(st.session_state.selected_cities)}个")
+            st.write(f"预算: ¥{budget}")
+            st.write(f"天数: {days}天")
         
         # 开始规划按钮
         st.markdown("---")
-        start_planning = st.button("🚀 开始智能规划", type="primary", use_container_width=True)
+        start_planning = st.button("🚀 开始规划", type="primary", use_container_width=True)
     
-    # 主界面
+    # 主界面内容
     if start_planning:
-        if not selected_city:
-            st.error("⚠️ 请先选择城市！")
+        if not st.session_state.selected_cities:
+            st.error("⚠️ 请至少选择一个城市！")
             return
         
-        if not selected_points:
-            st.error("⚠️ 请至少选择一个景点！")
-            return
+        # 标记已生成规划
+        st.session_state.plan_generated = True
+        
+        # 重新应用背景
+        apply_background()
         
         # 显示输入摘要
         st.markdown("### 📝 您的旅行需求")
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("城市", selected_city)
+            st.metric("城市数", len(st.session_state.selected_cities))
         with col2:
-            st.metric("预算", f"{budget}元")
+            st.metric("预算", f"¥{budget}")
         with col3:
             st.metric("天数", f"{days}天")
         with col4:
-            st.metric("景点数", len(selected_points))
+            avg_days = days // len(st.session_state.selected_cities) if st.session_state.selected_cities else 0
+            st.metric("每城平均", f"{avg_days}天")
         
-        st.markdown(f"**📍 途经点**: {' → '.join(selected_points)}")
-        st.markdown(f"**🍜 美食推荐**: {'开启（参考美团/大众点评）' if food_enabled else '关闭'}")
+        # 多城市路线规划
+        if len(st.session_state.selected_cities) > 1:
+            st.markdown("---")
+            days_per_city = {city: max(1, days // len(st.session_state.selected_cities)) 
+                           for city in st.session_state.selected_cities}
+            plan_result = optimize_route_by_budget(st.session_state.selected_cities, budget, days_per_city)
+            display_multi_city_plan(plan_result, budget)
         
-        # 创建进度条
-        progress_bar = st.progress(0)
-        status_text = st.empty()
+        # 每个城市的详细规划
+        st.markdown("---")
+        st.markdown("### 📍 各城市详细攻略")
         
-        # 初始化Agent
-        status_text.text("正在初始化智能Agent...")
-        progress_bar.progress(10)
-        
-        agent = init_agent(budget, selected_points, days, food_enabled)
-        
-        # 运行Agent
-        status_text.text("正在执行ReAct规划循环...")
-        progress_bar.progress(30)
-        
-        result = agent.run()
-        
-        progress_bar.progress(100)
-        status_text.text("规划完成！")
-        
-        # 显示ReAct步骤
-        display_react_steps(agent.history)
-        
-        # 显示完整攻略
-        display_itinerary(result, selected_city)
-        
+        for city in st.session_state.selected_cities:
+            with st.expander(f"🏙️ {city}攻略", expanded=True):
+                attractions = get_attractions(city)
+                
+                if attractions:
+                    # 选择该城市景点
+                    selected_attractions = st.multiselect(
+                        f"{city}的景点（推荐选择{min(3, len(attractions))}个）",
+                        attractions,
+                        default=attractions[:min(3, len(attractions))],
+                        key=f"attr_{city}"
+                    )
+                    
+                    if selected_attractions and st.button(f"生成{city}详细攻略", key=f"btn_{city}"):
+                        city_days = max(1, days // len(st.session_state.selected_cities))
+                        
+                        progress_bar = st.progress(0)
+                        
+                        # 初始化Agent
+                        progress_bar.progress(20)
+                        agent = init_agent(budget // len(st.session_state.selected_cities), 
+                                         selected_attractions, city_days, food_enabled)
+                        
+                        # 运行规划
+                        progress_bar.progress(50)
+                        result = agent.run()
+                        
+                        progress_bar.progress(100)
+                        
+                        # 显示结果
+                        display_react_steps(agent.history)
+                        
+                        # 路线展示
+                        st.markdown(f"**优化路线**: {' → '.join(result['route'])}")
+                        
+                        # 天气预报
+                        if result.get('weather', {}).get('forecast'):
+                            weather_cols = st.columns(len(result['weather']['forecast']))
+                            for i, day in enumerate(result['weather']['forecast']):
+                                with weather_cols[i]:
+                                    st.metric(f"第{day['day']}天", 
+                                            f"{day['temp_high']}°C", 
+                                            f"{day['condition']}")
+                        
+                        # 美食推荐
+                        if food_enabled:
+                            display_city_food(city)
+                else:
+                    st.info(f"暂无{city}的景点数据，可以手动添加")
+                    custom = st.text_input(f"添加{city}的自定义景点", key=f"custom_{city}")
+                    if custom:
+                        st.success(f"已添加: {custom}")
+    
     else:
         # 欢迎页面
         st.markdown("""
-        ### 👋 欢迎使用智能旅行规划Agent！
-        
-        本Agent基于 **ReAct (Reasoning + Acting)** 架构，支持**全国300+城市**：
-        
-        **🌟 核心功能：**
-        1. 🧠 **智能思考** - 分析您的需求，制定规划策略
-        2. 🔧 **工具调用** - 自动查询天气、人流、路线等信息
-        3. 📊 **结果整合** - 生成完整的旅行攻略
-        
-        **🏙️ 城市覆盖：**
-        - 北京、上海、广州、深圳、成都、杭州、西安、重庆、武汉、南京
-        - 以及全国所有省份的地级市
-        
-        **🍜 美食推荐：**
-        - 参考 **美团必吃榜**、**大众点评热门榜**
-        - 覆盖必吃榜、热门榜、本地特色
-        
-        **📍 景点数据：**
-        - 每个城市包含10-30个热门景点
-        - 支持自定义添加景点
-        
-        ---
-        
-        ### 🚀 使用步骤：
-        1. 在左侧侧边栏搜索或选择城市
-        2. 配置预算、选择景点、设置天数
-        3. 点击 **"开始智能规划"** 按钮
-        4. 获取完整的个性化旅行攻略
-        
-        开始规划您的旅程吧！✈️
-        """)
-        
-        # 展示架构图
-        st.markdown("### 🏗️ ReAct架构示意图")
-        st.markdown("""
-        ```
-        ┌─────────────────────────────────────────────────────────────┐
-        │                      ReAct Agent                            │
-        ├─────────────────────────────────────────────────────────────┤
-        │                                                             │
-        │   🧠 思考 (Thought)                                         │
-        │      ↓ "需要规划路线，查询天气和人流量"                       │
-        │   🔧 行动 (Action)                                          │
-        │      ↓ 调用工具: plan_route, get_weather, get_crowd         │
-        │   📊 观察 (Observation)                                     │
-        │      ↓ 收集结果，整合信息                                    │
-        │   🔄 循环...                                                │
-        │                                                             │
-        │   ✅ 完成 → 输出完整旅行攻略                                 │
-        │                                                             │
-        └─────────────────────────────────────────────────────────────┘
-        ```
-        """)
+        <div style="background:rgba(255,255,255,0.95); padding:30px; border-radius:15px;">
+            <h2>👋 欢迎使用范の旅行小助手</h2>
+            
+            <h3>🌟 核心功能</h3>
+            <ul>
+                <li><strong>多城市规划</strong> - 一次旅行可规划多个城市，自动优化路线</li>
+                <li><strong>机票酒店</strong> - 根据实时价格规划最经济的旅行方案</li>
+                <li><strong>美食反向搜索</strong> - 输入想吃的美食，找到最地道的城市</li>
+                <li><strong>动态背景</strong> - 根据选择的城市自动切换风景背景</li>
+                <li><strong>300+城市</strong> - 覆盖全国所有热门旅游城市</li>
+            </ul>
+            
+            <h3>🚀 使用步骤</h3>
+            <ol>
+                <li>在左侧侧边栏选择或搜索城市（可多选）</li>
+                <li>设置总预算和旅行天数</li>
+                <li>点击"开始规划"获取智能路线</li>
+                <li>查看各城市的详细攻略</li>
+            </ol>
+            
+            <h3>🍜 美食功能</h3>
+            <p>想吃火锅？输入"火锅"找到成都、重庆！<br>
+            想吃烤鸭？输入"烤鸭"找到北京！<br>
+            支持根据美食反向搜索城市！</p>
+        </div>
+        """, unsafe_allow_html=True)
         
         # 数据覆盖展示
-        st.markdown("### 📊 数据覆盖")
-        col1, col2, col3 = st.columns(3)
+        st.markdown("---")
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("覆盖城市", len(get_all_cities()))
+            st.metric("覆盖城市", "300+")
         with col2:
-            total_attractions = sum(len(get_attractions(city)) for city in get_all_cities())
-            st.metric("景点数量", total_attractions)
+            st.metric("景点数量", "5000+")
         with col3:
-            st.metric("美食数据", "美团+大众点评")
+            st.metric("美食数据", "美团/大众点评")
+        with col4:
+            st.metric("更新频率", "每周自动")
 
 if __name__ == "__main__":
     main()
