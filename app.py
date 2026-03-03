@@ -16,7 +16,9 @@ from tools.attraction_details import get_attraction_detail, get_city_transport
 def get_svg_icon(icon_name):
     """读取本地SVG图标文件"""
     try:
-        with open(f'static/icons/{icon_name}.svg', 'r') as f:
+        import os
+        icon_path = os.path.join('static', 'icons', f'{icon_name}.svg')
+        with open(icon_path, 'r', encoding='utf-8') as f:
             svg_content = f.read()
             # 提取svg标签内容，添加内联样式
             svg_content = svg_content.replace('fill="#5f6368"', 'fill="currentColor"')
@@ -24,7 +26,8 @@ def get_svg_icon(icon_name):
             svg_content = svg_content.replace('width="24px"', 'width="18px"')
             svg_content = svg_content.replace('<svg', '<svg style="vertical-align:middle;margin-right:4px;"')
             return svg_content
-    except:
+    except Exception as e:
+        print(f"Error loading icon {icon_name}: {e}")
         return ''
 
 # 图标映射
