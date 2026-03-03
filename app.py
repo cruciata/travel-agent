@@ -334,12 +334,12 @@ def main():
                 st.markdown("### 已选城市及景点")
                 
                 for city in st.session_state.selected_cities:
-                    with st.expander(f"{icon('pin')} {city}", expanded=True):
+                    with st.expander(f"📍 {city}", expanded=True):
                         col1, col2 = st.columns([4, 1])
                         with col1:
                             st.markdown(f"**{city}**")
                         with col2:
-                            if st.button(f"{icon('trash')} 删除", key=f"remove_{city}"):
+                            if st.button("🗑️ 删除", key=f"remove_{city}"):
                                 toggle_city(city)
                                 st.rerun()
                         
@@ -348,7 +348,7 @@ def main():
         with tab2:
             st.markdown("### 根据美食找城市")
             
-            food_search = st.text_input(f"{icon('utensils')} 输入美食名称", placeholder="如：火锅、烤鸭、小笼包...")
+            food_search = st.text_input("🍜 输入美食名称", placeholder="如：火锅、烤鸭、小笼包...")
             
             if food_search:
                 results = search_cities_by_food(food_search)
@@ -365,7 +365,7 @@ def main():
                                     toggle_city(city)
                                     st.rerun()
                             else:
-                                st.markdown(f"{icon('check')}")
+                                st.markdown(f"{icon('check')}", unsafe_allow_html=True)
                 else:
                     st.warning("未找到相关城市")
             
@@ -373,16 +373,16 @@ def main():
             st.markdown("**热门美食推荐**")
             recommendations = get_food_recommendations()
             for rec in recommendations[:5]:
-                with st.expander(f"{icon('utensils')} {rec['food']}"):
+                with st.expander(f"🍜 {rec['food']}"):
                     st.write(f"推荐城市: {', '.join(rec['cities'][:3])}")
         
         with tab3:
-            budget = st.number_input(f"{icon('wallet')} 总预算 (元)", min_value=1000, max_value=100000, value=5000, step=1000)
-            days = st.slider(f"{icon('clock')} 总天数", min_value=1, max_value=15, value=5)
-            food_enabled = st.toggle(f"{icon('utensils')} 开启美食推荐", value=True)
+            budget = st.number_input("💰 总预算 (元)", min_value=1000, max_value=100000, value=5000, step=1000)
+            days = st.slider("⏱️ 总天数", min_value=1, max_value=15, value=5)
+            food_enabled = st.toggle("🍜 开启美食推荐", value=True)
         
         st.markdown("---")
-        start_planning = st.button(f"{icon('arrow')} 开始规划", type="primary", use_container_width=True)
+        start_planning = st.button("▶️ 开始规划", type="primary", use_container_width=True)
     
     days_per_city = {}
     if st.session_state.selected_cities:
@@ -483,7 +483,7 @@ def main():
                 left_col, right_col = st.columns([2, 1])
                 
                 with left_col:
-                    st.markdown(f"**{icon('pin')} 优化路线**: {' → '.join(optimized_route)}")
+                    st.markdown(f"**{icon('pin')} 优化路线**: {' → '.join(optimized_route)}", unsafe_allow_html=True)
                     
                     st.markdown("#### 景点详细攻略")
                     for i, attr in enumerate(optimized_route):
