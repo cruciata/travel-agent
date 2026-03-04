@@ -92,6 +92,11 @@ st.markdown("""
     
     button[kind="header"] { display: none !important; }
     
+    /* 隐藏 Streamlit 内部的 Material Icon 文本 */
+    [data-testid="stIconMaterial"] {
+        display: none !important;
+    }
+    
     h1 { font-size: 24px !important; font-weight: 600 !important; color: #1a1a1a; }
     h2 { font-size: 18px !important; font-weight: 600 !important; color: #1a1a1a; }
     h3 { font-size: 14px !important; font-weight: 600 !important; color: #666; }
@@ -453,54 +458,51 @@ def main():
             
             with transport_tab2:
                 if len(st.session_state.selected_cities) >= 2:
-                    st.markdown("**实时查询12306火车票**")
-                    
-                    # 选择出发和到达城市
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        from_city = st.selectbox("出发城市", st.session_state.selected_cities, key="train_from")
-                    with col2:
-                        to_cities = [c for c in st.session_state.selected_cities if c != from_city]
-                        to_city = st.selectbox("到达城市", to_cities, key="train_to") if to_cities else None
-                    
-                    # 选择日期
                     from datetime import datetime, timedelta
-                    train_date = st.date_input("出发日期", datetime.now() + timedelta(days=1), key="train_date")
+                    train_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
                     
-                    if st.button("🔍 查询火车票", type="secondary"):
-                        if to_city:
-                            with st.spinner("正在查询12306..."):
-                                result = query_12306_trains(from_city, to_city, train_date.strftime("%Y-%m-%d"))
+                    st.markdown(f"**{train_date} 当日火车票信息**")
+                    
+                    # 自动查询相邻城市之间的火车票
+                    route_cities = plan_result.get("route", st.session_state.selected_cities)
+                    
+                    for i in range(len(route_cities) - 1):
+                        from_city = route_cities[i]
+                        to_city = route_cities[i + 1]
+                        
+                        with st.spinner(f"查询 {from_city} → {to_city}..."):
+                            result = query_12306_trains(from_city, to_city, train_date)
+                            
+                            if result["success"] and result["trains"]:
+                                st.markdown(f"**{from_city} → {to_city}** 找到 {result['train_count']} 趟列车")
                                 
-                                if result["success"] and result["trains"]:
-                                    st.success(f"找到 {result['train_count']} 趟列车")
+                                for train in result["trains"][:3]:  # 显示前3趟
+                                    tickets = train.get("tickets", {})
                                     
-                                    for train in result["trains"][:5]:  # 显示前5趟
-                                        tickets = train.get("tickets", {})
-                                        
-                                        # 构建余票信息
-                                        ticket_info = []
-                                        for seat_type, count in tickets.items():
-                                            if count not in ["无", "--"]:
-                                                ticket_info.append(f"{seat_type}: {count}")
-                                        
-                                        ticket_str = " | ".join(ticket_info) if ticket_info else "暂无余票信息"
-                                        
-                                        st.markdown(f"""
-                                        <div style="background:#ffffff;border:1px solid #e8e8e8;border-radius:6px;padding:12px;margin:8px 0;">
-                                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                                <strong style="font-size:16px;color:#1a1a1a;">🚄 {train['train_no']}</strong>
-                                                <span style="color:#666;font-size:13px;">{train['start_time']} → {train['arrive_time']}</span>
-                                            </div>
-                                            <div style="margin-top:8px;color:#666;font-size:13px;">
-                                                历时 {train['duration']} | {ticket_str}
-                                            </div>
+                                    # 构建余票信息
+                                    ticket_info = []
+                                    for seat_type, count in tickets.items():
+                                        if count not in ["无", "--"]:
+                                            ticket_info.append(f"{seat_type}: {count}")
+                                    
+                                    ticket_str = " | ".join(ticket_info) if ticket_info else "暂无余票信息"
+                                    
+                                    st.markdown(f"""
+                                    <div style="background:#ffffff;border:1px solid #e8e8e8;border-radius:6px;padding:12px;margin:8px 0;">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                                            <strong style="font-size:16px;color:#1a1a1a;">🚄 {train['train_no']}</strong>
+                                            <span style="color:#666;font-size:13px;">{train['start_time']} → {train['arrive_time']}</span>
                                         </div>
-                                        """, unsafe_allow_html=True)
-                                else:
-                                    st.error(f"查询失败: {result.get('error', '未知错误')}")
-                        else:
-                            st.warning("请选择不同的到达城市")
+                                        <div style="margin-top:8px;color:#666;font-size:13px;">
+                                            历时 {train['duration']} | {ticket_str}
+                                        </div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            else:
+                                st.info(f"{from_city} → {to_city}: {result.get('error', '未找到列车信息')}")
+                            
+                            if i < len(route_cities) - 2:
+                                st.markdown("---")
                 else:
                     st.info("请至少选择两个城市以查询火车票")
             
