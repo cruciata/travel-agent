@@ -9,7 +9,7 @@ from tools.cities import get_attractions, search_cities, POPULAR_CITIES
 from tools.food_data import get_food_for_city
 from tools.travel_costs import optimize_route_by_budget
 from tools.food_search import search_cities_by_food, get_food_recommendations
-from tools.backgrounds import get_multi_city_background
+from tools.backgrounds import get_multi_city_background, get_city_background
 from tools.attraction_details import get_attraction_detail, get_city_transport
 from tools.railway_query import query_trains
 
@@ -529,50 +529,91 @@ def main():
             
             city_days = days_per_city.get(city, 1)
             
-            with st.expander(f"{city} ({len(selected)}个景点)", expanded=True):
-                with st.spinner(f"规划{city}路线中..."):
-                    agent = init_agent(
-                        budget // len(st.session_state.selected_cities),
-                        selected,
-                        city_days,
-                        food_enabled
-                    )
-                    result = agent.run()
+            # 获取城市背景图片
+            city_bg = get_city_background(city)
+            
+            # 为每个城市创建带背景的区域
+            st.markdown(f"""
+            <style>
+            .city-section-{city} {{
+                background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.4)), url("{city_bg}");
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+                border-radius: 16px;
+                padding: 20px;
+                margin: 20px 0;
+            }}
+            .city-card {{
+                background: rgba(255, 255, 255, 0.95) !important;
+                backdrop-filter: blur(10px);
+                border-radius: 12px;
+                padding: 20px;
+                margin: 10px 0;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+            }}
+            .city-title {{
+                color: white !important;
+                font-size: 24px !important;
+                font-weight: bold;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+                margin-bottom: 15px;
+            }}
+            </style>
+            <div class="city-section-{city}">
+                <div class="city-title">📍 {city} ({len(selected)}个景点)</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            with st.spinner(f"规划{city}路线中..."):
+                agent = init_agent(
+                    budget // len(st.session_state.selected_cities),
+                    selected,
+                    city_days,
+                    food_enabled
+                )
+                result = agent.run()
+            
+            optimized_route = result['route']
+            
+            # 使用卡片容器包裹内容
+            st.markdown('<div class="city-card">', unsafe_allow_html=True)
+            
+            left_col, right_col = st.columns([2, 1])
+            
+            with left_col:
+                st.markdown(f"**{icon('pin')} 优化路线**: {' → '.join(optimized_route)}", unsafe_allow_html=True)
                 
-                optimized_route = result['route']
-                
-                left_col, right_col = st.columns([2, 1])
-                
-                with left_col:
-                    st.markdown(f"**{icon('pin')} 优化路线**: {' → '.join(optimized_route)}", unsafe_allow_html=True)
+                st.markdown("#### 景点详细攻略")
+                for i, attr in enumerate(optimized_route):
+                    is_last = (i == len(optimized_route) - 1)
+                    display_attraction_details(attr)
                     
-                    st.markdown("#### 景点详细攻略")
-                    for i, attr in enumerate(optimized_route):
-                        is_last = (i == len(optimized_route) - 1)
-                        display_attraction_details(attr)
-                        
-                        if not is_last:
-                            next_attr = optimized_route[i + 1]
-                            display_inter_attraction_transport(attr, next_attr)
-                    
-                    if result.get('weather', {}).get('forecast'):
-                        st.markdown(f"#### 天气预报")
-                        weather_cols = st.columns(len(result['weather']['forecast']))
-                        for i, day in enumerate(result['weather']['forecast']):
-                            with weather_cols[i]:
-                                st.metric(f"第{day['day']}天", f"{day['temp_high']}°C", f"{day['condition']}")
-                    
-                    if food_enabled:
-                        st.markdown(f"#### 美食推荐")
-                        food_data = get_food_for_city(city)
-                        if food_data.get("must_eat"):
-                            for r in food_data["must_eat"][:3]:
-                                tags = " ".join([f"`{t}`" for t in r.get("tags", [])])
-                                st.markdown(f"• **{r['name']}** ⭐{r['rating']} ¥{r['price']}/人 · {tags}")
+                    if not is_last:
+                        next_attr = optimized_route[i + 1]
+                        display_inter_attraction_transport(attr, next_attr)
                 
-                with right_col:
-                    st.markdown("#### 执行过程")
-                    display_react_steps(agent.history)
+                if result.get('weather', {}).get('forecast'):
+                    st.markdown(f"#### 天气预报")
+                    weather_cols = st.columns(len(result['weather']['forecast']))
+                    for i, day in enumerate(result['weather']['forecast']):
+                        with weather_cols[i]:
+                            st.metric(f"第{day['day']}天", f"{day['temp_high']}°C", f"{day['condition']}")
+                
+                if food_enabled:
+                    st.markdown(f"#### 美食推荐")
+                    food_data = get_food_for_city(city)
+                    if food_data.get("must_eat"):
+                        for r in food_data["must_eat"][:3]:
+                            tags = " ".join([f"`{t}`" for t in r.get("tags", [])])
+                            st.markdown(f"• **{r['name']}** ⭐{r['rating']} ¥{r['price']}/人 · {tags}")
+            
+            with right_col:
+                st.markdown("#### 执行过程")
+                display_react_steps(agent.history)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
     
     else:
         st.markdown("---")
