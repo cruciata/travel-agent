@@ -11,7 +11,7 @@ from tools.travel_costs import optimize_route_by_budget
 from tools.food_search import search_cities_by_food, get_food_recommendations
 from tools.backgrounds import get_multi_city_background
 from tools.attraction_details import get_attraction_detail, get_city_transport
-from tools.railway_12306 import query_12306_trains, search_trains, get_train_price
+from tools.railway_query import query_trains
 
 # 读取本地SVG图标
 def get_svg_icon(icon_name):
@@ -471,7 +471,7 @@ def main():
                         to_city = route_cities[i + 1]
                         
                         with st.spinner(f"查询 {from_city} → {to_city}..."):
-                            result = query_12306_trains(from_city, to_city, train_date)
+                            result = query_trains(from_city, to_city, train_date)
                             
                             if result["success"] and result["trains"]:
                                 st.markdown(f"**{from_city} → {to_city}** 找到 {result['train_count']} 趟列车")
