@@ -66,20 +66,17 @@ def get_city_background(city: str) -> str:
     基于城市名生成固定的随机风景图
     """
     # 使用城市名作为种子，确保同一城市总是返回相同图片
-    hash_val = int(hashlib.md5(city.encode()).hexdigest(), 16)
-    
-    # 根据城市类型选择不同的图片
-    landscape_type = CITY_LANDSCAPE_MAPPING.get(city, "random")
+    hash_val = int(hashlib.md5(city.encode('utf-8')).hexdigest(), 16)
     
     # 基于哈希值选择图片ID
     photo_index = hash_val % len(LANDSCAPE_PHOTOS)
     photo_id = LANDSCAPE_PHOTOS[photo_index]
     
-    # 添加随机参数确保不同城市有不同的图
+    # 使用数字签名确保不同城市有不同的图
     random_param = hash_val % 1000
     
-    # 构建Unsplash URL
-    return f"{UNSPLASH_BASE}-{photo_id}?w=1920&q=80&sig={city}{random_param}"
+    # 构建Unsplash URL (使用数字ID避免中文编码问题)
+    return f"{UNSPLASH_BASE}-{photo_id}?w=1920&q=80&sig={random_param}"
 
 
 def get_multi_city_background(cities: list) -> str:
@@ -422,7 +419,7 @@ def generate_background_css(image_url: str) -> str:
     </style>
     """
 
-# 风景类别背景
+# 风景类别背景（备用）
 CATEGORY_BACKGROUNDS = {
     "山水": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80",
     "古镇": "https://images.unsplash.com/photo-1527684651001-731c474bbb5a?w=1920&q=80",
@@ -432,24 +429,6 @@ CATEGORY_BACKGROUNDS = {
     "草原": "https://images.unsplash.com/photo-1500534623283-312aade485b7?w=1920&q=80",
     "沙漠": "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=1920&q=80",
 }
-
-def get_city_background(city: str) -> str:
-    """获取城市背景图片URL"""
-    if city in CITY_BACKGROUNDS:
-        return CITY_BACKGROUNDS[city]
-    return CITY_BACKGROUNDS["default"]
-
-def get_multi_city_background(cities: list) -> str:
-    """获取多城市背景（使用第一个主要城市）"""
-    if not cities:
-        return CITY_BACKGROUNDS["default"]
-    
-    # 优先使用有专属背景的城市
-    for city in cities:
-        if city in CITY_BACKGROUNDS and city != "default":
-            return CITY_BACKGROUNDS[city]
-    
-    return CITY_BACKGROUNDS["default"]
 
 def generate_background_css(image_url: str) -> str:
     """生成背景图片CSS样式"""
